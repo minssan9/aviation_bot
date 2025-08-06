@@ -1,0 +1,17 @@
+{
+  "name": "aviation-knowledge-bot",
+  "version": "1.0.0",
+  "description": "Daily aviation knowledge telegram bot",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.3",
+    "dotenv": "^17.2.1",
+    "moment-timezone": "^0.5.43",
+    "node-cron": "^3.0.2",
+    "node-telegram-bot-api": "^0.61.0"
+  }
+}
