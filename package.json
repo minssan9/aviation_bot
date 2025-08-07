@@ -1,14 +1,16 @@
 {
   "name": "aviation-knowledge-bot",
-  "version": "1.0.0",
-  "description": "Daily aviation knowledge telegram bot",
-  "main": "bot.js",
+  "version": "2.0.0",
+  "description": "Daily aviation knowledge telegram bot with Google Gemini AI integration",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node bot.js",
-    "dev": "nodemon bot.js"
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "legacy": "node bot.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",
+    "@google/generative-ai": "^0.19.0",
     "dotenv": "^17.2.1",
     "moment-timezone": "^0.5.43",
     "node-cron": "^3.0.2",
