@@ -2,37 +2,83 @@ require('dotenv').config();
 
 class Config {
   constructor() {
+    // Telegram Bot
     this.BOT_TOKEN = process.env.BOT_TOKEN;
+    
+    // AI Providers
     this.GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    this.CLAUDE_API_KEY = process.env.CLAUDE_API_KEY; // Fallback
+    this.CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
+    
+    // Database Configuration
+    this.DB_HOST = process.env.DB_HOST || 'localhost';
+    this.DB_PORT = parseInt(process.env.DB_PORT) || 3306;
+    this.DB_USER = process.env.DB_USER || 'root';
+    this.DB_PASSWORD = process.env.DB_PASSWORD || '';
+    this.DB_NAME = process.env.DB_NAME || 'aviation_bot';
+    
+    // Database Options
+    this.DB_CONNECTION_LIMIT = parseInt(process.env.DB_CONNECTION_LIMIT) || 10;
+    this.DB_ACQUIRE_TIMEOUT = parseInt(process.env.DB_ACQUIRE_TIMEOUT) || 60000;
+    this.DB_TIMEOUT = parseInt(process.env.DB_TIMEOUT) || 60000;
+    
+    // Environment
+    this.NODE_ENV = process.env.NODE_ENV || 'development';
     
     this.validate();
   }
 
   validate() {
+    // Bot Token validation
     if (!this.BOT_TOKEN) {
-      console.error('❌ BOT_TOKEN is not set in .env file');
+      console.error('❌ BOT_TOKEN is required in .env file');
       process.exit(1);
     }
 
+    // AI Provider validation
     if (!this.GEMINI_API_KEY && !this.CLAUDE_API_KEY) {
-      console.error('❌ Either GEMINI_API_KEY or CLAUDE_API_KEY must be set in .env file');
+      console.error('❌ At least one AI provider key required (GEMINI_API_KEY or CLAUDE_API_KEY)');
       process.exit(1);
     }
 
-    // Log available providers
+    // Database validation
+    if (!this.DB_PASSWORD && this.NODE_ENV === 'production') {
+      console.warn('⚠️ DB_PASSWORD not set - this may cause connection issues in production');
+    }
+
+    // Log configuration
     const providers = [];
     if (this.GEMINI_API_KEY) providers.push('Gemini');
     if (this.CLAUDE_API_KEY) providers.push('Anthropic');
     
-    console.log(`🔑 Available AI providers: ${providers.join(', ')}`);
+    console.log(`🔑 AI Providers: ${providers.join(', ')}`);
+    console.log(`🗄️ Database: ${this.DB_HOST}:${this.DB_PORT}/${this.DB_NAME}`);
   }
 
   getConfig() {
     return {
+      // Bot Configuration
       BOT_TOKEN: this.BOT_TOKEN,
+      
+      // AI Provider Keys
       GEMINI_API_KEY: this.GEMINI_API_KEY,
-      CLAUDE_API_KEY: this.CLAUDE_API_KEY
+      CLAUDE_API_KEY: this.CLAUDE_API_KEY,
+      
+      // Database Configuration
+      DB_HOST: this.DB_HOST,
+      DB_PORT: this.DB_PORT,
+      DB_USER: this.DB_USER,
+      DB_PASSWORD: this.DB_PASSWORD,
+      DB_NAME: this.DB_NAME,
+      
+      // Database Options
+      dbOptions: {
+        connectionLimit: this.DB_CONNECTION_LIMIT,
+        acquireTimeout: this.DB_ACQUIRE_TIMEOUT,
+        timeout: this.DB_TIMEOUT
+      },
+      
+      // Environment
+      NODE_ENV: this.NODE_ENV
     };
   }
 }

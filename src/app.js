@@ -1,20 +1,22 @@
 const TelegramBot = require('node-telegram-bot-api');
 const config = require('./config');
 const AIProviderManager = require('./providers/aiProvider');
-const SubscriberManager = require('./features/subscriberManager');
+const UserService = require('./services/userService');
 const MessageGenerator = require('./features/messageGenerator');
 const CommandHandlers = require('./features/commandHandlers');
 const Scheduler = require('./features/scheduler');
+const AdminServer = require('./admin/adminServer');
 
 class AviationBot {
   constructor() {
     this.config = config.getConfig();
     this.bot = null;
     this.aiProvider = null;
-    this.subscriberManager = null;
+    this.userService = null;
     this.messageGenerator = null;
     this.commandHandlers = null;
     this.scheduler = null;
+    this.adminServer = null;
   }
 
   async initialize() {
@@ -31,19 +33,29 @@ class AviationBot {
       const providerStatus = await this.aiProvider.checkAvailability();
       console.log('🔍 AI Provider 상태:', providerStatus);
       
+      // Initialize AI Provider database
+      await this.aiProvider.initialize();
+
+      // Initialize User Service with MySQL
+      this.userService = new UserService(this.config);
+      await this.userService.initialize();
+
       // Initialize other components
-      this.subscriberManager = new SubscriberManager();
       this.messageGenerator = new MessageGenerator(this.aiProvider);
       this.commandHandlers = new CommandHandlers(
         this.bot, 
-        this.subscriberManager, 
-        this.messageGenerator
+        this.userService, 
+        this.messageGenerator,
+        this.aiProvider
       );
       this.scheduler = new Scheduler(
         this.bot,
-        this.subscriberManager,
+        this.userService,
         this.messageGenerator
       );
+
+      // Initialize Admin Server
+      this.adminServer = new AdminServer();
       
       console.log('✅ 모든 모듈이 성공적으로 초기화되었습니다');
       
@@ -59,9 +71,13 @@ class AviationBot {
     // Start scheduler
     this.scheduler.start();
     
+    // Start admin server
+    this.adminServer.start();
+    
     console.log('🤖 항공지식 알림 봇이 시작되었습니다!');
     console.log('📅 스케줄: 오전 9시, 오후 2시, 저녁 8시 (KST)');
     console.log(`🎯 활성 AI 제공자: ${this.aiProvider.getActiveProviders().join(', ')}`);
+    console.log('🌐 어드민 페이지: http://localhost:3000');
   }
 
   async stop() {
@@ -69,6 +85,18 @@ class AviationBot {
     
     if (this.scheduler) {
       this.scheduler.stop();
+    }
+    
+    if (this.adminServer) {
+      this.adminServer.stop();
+    }
+
+    if (this.aiProvider) {
+      await this.aiProvider.close();
+    }
+
+    if (this.userService) {
+      await this.userService.close();
     }
     
     if (this.bot) {
