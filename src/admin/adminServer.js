@@ -2,11 +2,14 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
 const multer = require('multer');
+const TopicService = require('../services/topicService');
 
 class AdminServer {
-  constructor() {
+  constructor(database) {
     this.app = express();
     this.port = 3000;
+    this.database = database;
+    this.topicService = new TopicService(database);
     this.dataFile = path.join(__dirname, '../data/aviationKnowledge.js');
     this.backupDir = path.join(__dirname, '../data/backups');
     
@@ -151,6 +154,177 @@ class AdminServer {
       } catch (error) {
         console.error('데이터 검증 오류:', error);
         res.status(500).json({ error: '데이터를 검증할 수 없습니다' });
+      }
+    });
+
+    // === 토픽 관리 API ===
+    // 모든 토픽 조회
+    this.app.get('/api/topics', async (req, res) => {
+      try {
+        const topics = await this.topicService.getAllTopics();
+        res.json(topics);
+      } catch (error) {
+        console.error('토픽 조회 오류:', error);
+        res.status(500).json({ error: '토픽을 조회할 수 없습니다' });
+      }
+    });
+
+    // 주간 스케줄 조회
+    this.app.get('/api/topics/schedule', async (req, res) => {
+      try {
+        const schedule = await this.topicService.getWeeklySchedule();
+        res.json(schedule);
+      } catch (error) {
+        console.error('스케줄 조회 오류:', error);
+        res.status(500).json({ error: '스케줄을 조회할 수 없습니다' });
+      }
+    });
+
+    // 토픽별 주제 조회
+    this.app.get('/api/topics/:id/subjects', async (req, res) => {
+      try {
+        const topicId = parseInt(req.params.id);
+        const subjects = await this.topicService.getSubjectsByTopic(topicId);
+        res.json(subjects);
+      } catch (error) {
+        console.error('주제 조회 오류:', error);
+        res.status(500).json({ error: '주제를 조회할 수 없습니다' });
+      }
+    });
+
+    // 토픽 생성
+    this.app.post('/api/topics', async (req, res) => {
+      try {
+        const { name, description, dayOfWeek } = req.body;
+        
+        if (!name || dayOfWeek === undefined) {
+          return res.status(400).json({ error: '토픽명과 요일은 필수입니다' });
+        }
+
+        const id = await this.topicService.createTopic(name, description, dayOfWeek);
+        res.json({ success: true, id, message: '토픽이 생성되었습니다' });
+      } catch (error) {
+        console.error('토픽 생성 오류:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+          res.status(400).json({ error: '이미 존재하는 토픽명입니다' });
+        } else {
+          res.status(500).json({ error: '토픽을 생성할 수 없습니다' });
+        }
+      }
+    });
+
+    // 토픽 업데이트
+    this.app.put('/api/topics/:id', async (req, res) => {
+      try {
+        const id = parseInt(req.params.id);
+        const { name, description, dayOfWeek } = req.body;
+        
+        if (!name || dayOfWeek === undefined) {
+          return res.status(400).json({ error: '토픽명과 요일은 필수입니다' });
+        }
+
+        await this.topicService.updateTopic(id, name, description, dayOfWeek);
+        res.json({ success: true, message: '토픽이 업데이트되었습니다' });
+      } catch (error) {
+        console.error('토픽 업데이트 오류:', error);
+        res.status(500).json({ error: '토픽을 업데이트할 수 없습니다' });
+      }
+    });
+
+    // 주제 생성
+    this.app.post('/api/subjects', async (req, res) => {
+      try {
+        const { topicId, title, content, difficultyLevel, sortOrder } = req.body;
+        
+        if (!topicId || !title) {
+          return res.status(400).json({ error: '토픽ID와 제목은 필수입니다' });
+        }
+
+        const id = await this.topicService.createSubject(
+          topicId, title, content, difficultyLevel, sortOrder
+        );
+        res.json({ success: true, id, message: '주제가 생성되었습니다' });
+      } catch (error) {
+        console.error('주제 생성 오류:', error);
+        res.status(500).json({ error: '주제를 생성할 수 없습니다' });
+      }
+    });
+
+    // 주제 업데이트
+    this.app.put('/api/subjects/:id', async (req, res) => {
+      try {
+        const id = parseInt(req.params.id);
+        const { title, content, difficultyLevel, sortOrder } = req.body;
+        
+        if (!title) {
+          return res.status(400).json({ error: '제목은 필수입니다' });
+        }
+
+        await this.topicService.updateSubject(id, title, content, difficultyLevel, sortOrder);
+        res.json({ success: true, message: '주제가 업데이트되었습니다' });
+      } catch (error) {
+        console.error('주제 업데이트 오류:', error);
+        res.status(500).json({ error: '주제를 업데이트할 수 없습니다' });
+      }
+    });
+
+    // 주제 삭제
+    this.app.delete('/api/subjects/:id', async (req, res) => {
+      try {
+        const id = parseInt(req.params.id);
+        await this.topicService.deleteSubject(id);
+        res.json({ success: true, message: '주제가 삭제되었습니다' });
+      } catch (error) {
+        console.error('주제 삭제 오류:', error);
+        res.status(500).json({ error: '주제를 삭제할 수 없습니다' });
+      }
+    });
+
+    // 주제 순서 업데이트
+    this.app.put('/api/topics/:id/subjects/order', async (req, res) => {
+      try {
+        const topicId = parseInt(req.params.id);
+        const { subjectOrders } = req.body;
+        
+        if (!Array.isArray(subjectOrders)) {
+          return res.status(400).json({ error: '주제 순서 배열이 필요합니다' });
+        }
+
+        await this.topicService.updateSubjectOrder(topicId, subjectOrders);
+        res.json({ success: true, message: '주제 순서가 업데이트되었습니다' });
+      } catch (error) {
+        console.error('주제 순서 업데이트 오류:', error);
+        res.status(500).json({ error: '주제 순서를 업데이트할 수 없습니다' });
+      }
+    });
+
+    // 주제 검색
+    this.app.get('/api/subjects/search', async (req, res) => {
+      try {
+        const { q: query, topic_id: topicId, difficulty } = req.query;
+        
+        if (!query || query.trim() === '') {
+          return res.status(400).json({ error: '검색어가 필요합니다' });
+        }
+
+        const subjects = await this.topicService.searchSubjects(
+          query.trim(), topicId ? parseInt(topicId) : null, difficulty
+        );
+        res.json(subjects);
+      } catch (error) {
+        console.error('주제 검색 오류:', error);
+        res.status(500).json({ error: '주제를 검색할 수 없습니다' });
+      }
+    });
+
+    // 통계 정보
+    this.app.get('/api/topics/stats', async (req, res) => {
+      try {
+        const stats = await this.topicService.getStats();
+        res.json(stats);
+      } catch (error) {
+        console.error('통계 조회 오류:', error);
+        res.status(500).json({ error: '통계를 조회할 수 없습니다' });
       }
     });
   }

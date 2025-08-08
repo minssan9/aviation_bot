@@ -211,19 +211,19 @@ class QuizService {
       return '❌ 저장된 퀴즈가 없습니다. 먼저 새로운 퀴즈를 생성해보세요!';
     }
     
-    let message = `🧠 **항공 퀴즈** #${quiz.id}\n\n`;
-    message += `📚 **주제**: ${quiz.topic}\n`;
-    message += `🎯 **영역**: ${quiz.knowledge_area}\n\n`;
-    message += `**문제:**\n${quiz.question}\n\n`;
-    message += `**선택지:**\n`;
+    let message = `🧠 <b>항공 퀴즈</b> #${quiz.id}\n\n`;
+    message += `📚 <b>주제</b>: ${quiz.topic}\n`;
+    message += `🎯 <b>영역</b>: ${quiz.knowledge_area}\n\n`;
+    message += `<b>문제:</b>\n${quiz.question}\n\n`;
+    message += `<b>선택지:</b>\n`;
     message += `A) ${quiz.option_a}\n`;
     message += `B) ${quiz.option_b}\n`;
     message += `C) ${quiz.option_c}\n`;
     message += `D) ${quiz.option_d}\n\n`;
-    message += `**정답:** ${quiz.correct_answer}\n\n`;
+    message += `<b>정답:</b> ${quiz.correct_answer}\n\n`;
     
     if (quiz.explanation) {
-      message += `**해설:**\n${quiz.explanation}`;
+      message += `<b>해설:</b>\n${quiz.explanation}`;
     }
     
     return message;
