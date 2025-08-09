@@ -2,6 +2,8 @@ const TelegramBot = require('node-telegram-bot-api');
 const config = require('./config');
 const AIProviderManager = require('./providers/aiProvider');
 const UserService = require('./services/userService');
+const TopicService = require('./services/topicService');
+const { AviationKnowledgeService, AviationKnowledgeManager } = require('./services/aviationKnowledgeService');
 const MessageGenerator = require('./features/messageGenerator');
 const CommandHandlers = require('./features/commandHandlers');
 const Scheduler = require('./features/scheduler');
@@ -13,6 +15,8 @@ class AviationBot {
     this.bot = null;
     this.aiProvider = null;
     this.userService = null;
+    this.topicService = null;
+    this.aviationKnowledgeService = null;
     this.messageGenerator = null;
     this.commandHandlers = null;
     this.scheduler = null;
@@ -39,9 +43,21 @@ class AviationBot {
       // Initialize User Service with MySQL
       this.userService = new UserService(this.config);
       await this.userService.initialize();
+      
+      // Get database instance from user service
+      const database = this.userService.getDatabase();
+      
+      // Initialize Topic and Aviation Knowledge services
+      this.topicService = new TopicService(database);
+      this.aviationKnowledgeService = new AviationKnowledgeService(database, this.topicService);
+      
+      // Set global instance for backward compatibility
+      AviationKnowledgeManager.setInstance(this.aviationKnowledgeService);
+      
+      console.log('✅ Database-driven aviation knowledge system initialized');
 
-      // Initialize other components
-      this.messageGenerator = new MessageGenerator(this.aiProvider);
+      // Initialize other components with aviation knowledge service
+      this.messageGenerator = new MessageGenerator(this.aiProvider, this.aviationKnowledgeService);
       this.commandHandlers = new CommandHandlers(
         this.bot, 
         this.userService, 
@@ -54,8 +70,8 @@ class AviationBot {
         this.messageGenerator
       );
 
-      // Initialize Admin Server
-      this.adminServer = new AdminServer();
+      // Initialize Admin Server with database
+      this.adminServer = new AdminServer(database);
       
       console.log('✅ 모든 모듈이 성공적으로 초기화되었습니다');
       
@@ -78,6 +94,9 @@ class AviationBot {
     console.log('📅 스케줄: 오전 9시, 오후 2시, 저녁 8시 (KST)');
     console.log(`🎯 활성 AI 제공자: ${this.aiProvider.getActiveProviders().join(', ')}`);
     console.log('🌐 어드민 페이지: http://localhost:3000');
+    
+    // Log aviation knowledge stats
+    this._logAviationKnowledgeStats();
   }
 
   async stop() {
@@ -104,6 +123,23 @@ class AviationBot {
     }
     
     console.log('✅ 봇이 정상적으로 중지되었습니다');
+  }
+  
+  async _logAviationKnowledgeStats() {
+    try {
+      const stats = await this.aviationKnowledgeService.getStats();
+      console.log(`📊 항공지식 DB 통계: ${stats.totalTopics}개 토픽, ${stats.totalSubjects}개 주제`);
+      console.log(`📈 토픽당 평균 주제 수: ${stats.averageSubjectsPerTopic}개`);
+      
+      if (stats.subjectsByDifficulty) {
+        const difficultyStats = Object.entries(stats.subjectsByDifficulty)
+          .map(([level, count]) => `${level}: ${count}개`)
+          .join(', ');
+        console.log(`🎯 난이도별 분포: ${difficultyStats}`);
+      }
+    } catch (error) {
+      console.warn('⚠️ 항공지식 통계 조회 실패:', error.message);
+    }
   }
 }
 

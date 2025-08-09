@@ -1,5 +1,5 @@
 const moment = require('moment-timezone');
-const { AviationKnowledgeManager } = require('../data/aviationKnowledge');
+const { AviationKnowledgeManager } = require('../services/aviationKnowledgeService');
 
 class CommandHandlers {
   constructor(bot, userService, messageGenerator, aiProvider = null) {
@@ -174,7 +174,7 @@ class CommandHandlers {
         const isSubscribed = await this.userService.isSubscribed(chatId);
         const subscriberCount = await this.userService.getSubscriberCount();
         
-        const statusMessage = this.messageGenerator.getStatusMessage(isSubscribed, subscriberCount);
+        const statusMessage = await this.messageGenerator.getStatusMessage(isSubscribed, subscriberCount);
         await this.sendSafeMessage(chatId, statusMessage);
       } catch (error) {
         console.error('Status command error:', error);
@@ -224,8 +224,8 @@ class CommandHandlers {
           // 오늘의 주제로 새 퀴즈 생성
           const now = moment().tz('Asia/Seoul');
           const dayOfWeek = now.day();
-          const todayKnowledge = AviationKnowledgeManager.getKnowledgeByDay(dayOfWeek);
-          const randomSubject = AviationKnowledgeManager.getRandomSubject(dayOfWeek);
+          const todayKnowledge = await AviationKnowledgeManager.getKnowledgeByDay(dayOfWeek);
+          const randomSubject = await AviationKnowledgeManager.getRandomSubject(dayOfWeek);
           
           const quizMessage = await this.messageGenerator.generateCustomQuiz(todayKnowledge.topic, randomSubject);
           await this.sendSafeMessage(chatId, quizMessage);

@@ -10,6 +10,13 @@ class UserService {
   }
 
   /**
+   * Get database instance for other services
+   */
+  getDatabase() {
+    return this.db;
+  }
+
+  /**
    * 사용자 등록/업데이트 (Telegram userData 기반)
    */
   async upsertUser(telegramData) {

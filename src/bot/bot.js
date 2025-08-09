@@ -2,6 +2,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
 const Anthropic = require('@anthropic-ai/sdk');
+const MySQLDatabase = require('../database/mysqlDatabase');
+const TopicService = require('../services/topicService');
+const { AviationKnowledgeService, AviationKnowledgeManager } = require('../services/aviationKnowledgeService');
 require('dotenv').config();
 
 // 봇 토큰 & Claude API Key (환경 변수에서 가져오기)
@@ -21,82 +24,72 @@ if (!CLAUDE_API_KEY) {
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 const anthropic = new Anthropic({ apiKey: CLAUDE_API_KEY });
 
-// 사용자 ID 저장 (실제로는 데이터베이스 사용 권장)
-let subscribers = new Set();
+// 데이터베이스 초기화
+let database, topicService, aviationKnowledgeService;
+let subscribers = new Set(); // 임시 저장소 (DB 연결 실패시 fallback)
 
-// 요일별 항공지식 데이터
-const aviationKnowledge = {
-  0: { // 일요일
-    topic: "응급상황 및 안전",
-    subjects: [
-      "Engine Failure 시 Best Glide Speed와 Landing Site 선정",
-      "Spatial Disorientation 예방과 발생 시 대응방법", 
-      "Emergency Descent 절차와 Cabin Pressurization 문제",
-      "Fire Emergency (Engine, Electrical, Cabin) 대응절차",
-      "Inadvertent IMC Entry 시 절차와 예방방법"
-    ]
-  },
-  1: { // 월요일
-    topic: "항공역학",
-    subjects: [
-      "Bernoulli's Principle과 실제 양력 생성 원리의 차이점",
-      "Wing Loading이 항공기 성능에 미치는 영향",
-      "Stall의 종류와 각각의 특성 (Power-on, Power-off, Accelerated stall)",
-      "Ground Effect 현상과 이착륙 시 고려사항",
-      "Adverse Yaw 현상과 조종사의 대응방법"
-    ]
-  },
-  2: { // 화요일
-    topic: "항법",
-    subjects: [
-      "ILS Approach의 구성요소와 Category별 최저기상조건",
-      "GPS WAAS와 기존 GPS의 차이점 및 정밀접근 가능성",
-      "VOR Station Check 절차와 정확도 확인 방법",
-      "Dead Reckoning과 Pilotage의 실제 적용",
-      "Magnetic Variation과 Deviation의 차이 및 계산법"
-    ]
-  },
-  3: { // 수요일
-    topic: "기상학",
-    subjects: [
-      "Thunderstorm의 생성과정과 3단계 (Cumulus, Mature, Dissipating)",
-      "Wind Shear의 종류와 조종사 대응절차",
-      "Icing 조건과 Anti-ice/De-ice 시스템 작동원리",
-      "Mountain Wave와 Rotor의 형성 및 위험성",
-      "METAR/TAF 해석과 실제 비행계획 적용"
-    ]
-  },
-  4: { // 목요일
-    topic: "항공기 시스템",
-    subjects: [
-      "Turbocharged vs Supercharged Engine의 차이점과 운용방법",
-      "Electrical System 구성과 Generator/Alternator 고장 시 절차",
-      "Hydraulic System의 작동원리와 백업 시스템",
-      "Pitot-Static System과 관련 계기 오류 패턴",
-      "Fuel System과 Fuel Management 절차"
-    ]
-  },
-  5: { // 금요일
-    topic: "비행 규정",
-    subjects: [
-      "Class A, B, C, D, E Airspace의 입장 요건과 장비 요구사항",
-      "사업용 조종사의 Duty Time과 Rest Requirements",
-      "IFR Alternate Airport 선정 기준과 Fuel Requirements",
-      "Medical Certificate의 종류별 유효기간과 제한사항",
-      "Controlled Airport에서의 Communication Procedures"
-    ]
-  },
-  6: { // 토요일
-    topic: "비행 계획 및 성능",
-    subjects: [
-      "Weight & Balance 계산과 CG Envelope 내 유지 방법",
-      "Takeoff/Landing Performance Chart 해석과 실제 적용",
-      "Density Altitude 계산과 항공기 성능에 미치는 영향",
-      "Wind Triangle과 Ground Speed 계산",
-      "Fuel Planning과 Reserve Fuel 요구사항"
-    ]
+// 데이터베이스 초기화 함수
+async function initializeDatabase() {
+  try {
+    database = new MySQLDatabase({
+      DB_HOST: process.env.DB_HOST,
+      DB_PORT: process.env.DB_PORT,
+      DB_USER: process.env.DB_USER,
+      DB_PASSWORD: process.env.DB_PASSWORD,
+      DB_NAME: process.env.DB_NAME
+    });
+    
+    await database.initialize();
+    console.log('✅ Database initialized successfully');
+    
+    topicService = new TopicService(database);
+    aviationKnowledgeService = new AviationKnowledgeService(database, topicService);
+    
+    // Static manager 인스턴스 설정
+    AviationKnowledgeManager.setInstance(aviationKnowledgeService);
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Database initialization failed:', error);
+    console.log('⚠️ Falling back to hardcoded data');
+    return false;
   }
+}
+
+// 요일별 항공지식 데이터 (DB 연결 실패시 fallback용)
+const fallbackAviationKnowledge = {
+  0: { topic: "응급상황 및 안전", subjects: ["Engine Failure 시 Best Glide Speed와 Landing Site 선정", "Spatial Disorientation 예방과 발생 시 대응방법"] },
+  1: { topic: "항공역학", subjects: ["Bernoulli's Principle과 실제 양력 생성 원리의 차이점", "Wing Loading이 항공기 성능에 미치는 영향"] },
+  2: { topic: "항법", subjects: ["ILS Approach의 구성요소와 Category별 최저기상조건", "GPS WAAS와 기존 GPS의 차이점 및 정밀접근 가능성"] },
+  3: { topic: "기상학", subjects: ["Thunderstorm의 생성과정과 3단계 (Cumulus, Mature, Dissipating)", "Wind Shear의 종류와 조종사 대응절차"] },
+  4: { topic: "항공기 시스템", subjects: ["Turbocharged vs Supercharged Engine의 차이점과 운용방법", "Electrical System 구성과 Generator/Alternator 고장 시 절차"] },
+  5: { topic: "비행 규정", subjects: ["Class A, B, C, D, E Airspace의 입장 요건과 장비 요구사항", "사업용 조종사의 Duty Time과 Rest Requirements"] },
+  6: { topic: "비행 계획 및 성능", subjects: ["Weight & Balance 계산과 CG Envelope 내 유지 방법", "Takeoff/Landing Performance Chart 해석과 실제 적용"] }
 };
+
+// 데이터 소스 함수 (DB 우선, fallback 지원)
+async function getKnowledgeByDay(dayOfWeek) {
+  try {
+    if (aviationKnowledgeService) {
+      return await AviationKnowledgeManager.getKnowledgeByDay(dayOfWeek);
+    }
+  } catch (error) {
+    console.error('DB query failed, using fallback:', error);
+  }
+  return fallbackAviationKnowledge[dayOfWeek];
+}
+
+async function getRandomSubject(dayOfWeek) {
+  try {
+    if (aviationKnowledgeService) {
+      return await AviationKnowledgeManager.getRandomSubject(dayOfWeek);
+    }
+  } catch (error) {
+    console.error('DB query failed, using fallback:', error);
+  }
+  const knowledge = fallbackAviationKnowledge[dayOfWeek];
+  return knowledge.subjects[Math.floor(Math.random() * knowledge.subjects.length)];
+}
 
 // Claude API를 사용한 지식 쿼리 함수
 async function queryClaudeKnowledge(topic, knowledgeArea) {
@@ -141,19 +134,19 @@ D) [선택지 4]
   }
 }
 
-// 메시지 생성 함수 (Claude API 통합)
+// 메시지 생성 함수 (DB 통합)
 async function generateMessage(timeSlot) {
   const now = moment().tz('Asia/Seoul');
   const dayOfWeek = now.day();
-  const todayKnowledge = aviationKnowledge[dayOfWeek];
+  
+  const todayKnowledge = await getKnowledgeByDay(dayOfWeek);
+  const randomSubject = await getRandomSubject(dayOfWeek);
   
   const timeEmojis = {
     morning: '🌅',
     afternoon: '☀️', 
     evening: '🌙'
   };
-  
-  const randomSubject = todayKnowledge.subjects[Math.floor(Math.random() * todayKnowledge.subjects.length)];
   
   let message = `${timeEmojis[timeSlot]} **${timeSlot === 'morning' ? '오늘의' : timeSlot === 'afternoon' ? '오후' : '저녁'} 항공지식**\n\n`;
   message += `📚 **주제**: ${todayKnowledge.topic}\n\n`;
@@ -172,7 +165,8 @@ async function generateMessage(timeSlot) {
   } else if (timeSlot === 'afternoon') {
     message += `🔍 **심화 학습**:\n- 문제 상황 3가지와 대응 조치\n- 실제 비행 중 적용 방법\n- 안전 고려사항`;
   } else {
-    message += `📝 **복습 및 정리**:\n- 오늘 학습한 내용 요약\n- 실무 적용 포인트 재확인\n- 내일 학습 주제 미리보기: ${aviationKnowledge[(dayOfWeek + 1) % 7].topic}`;
+    const tomorrowKnowledge = await getKnowledgeByDay((dayOfWeek + 1) % 7);
+    message += `📝 **복습 및 정리**:\n- 오늘 학습한 내용 요약\n- 실무 적용 포인트 재확인\n- 내일 학습 주제 미리보기: ${tomorrowKnowledge.topic}`;
   }
   
   return message;
@@ -217,19 +211,26 @@ bot.onText(/\/stop/, (msg) => {
   bot.sendMessage(chatId, '✅ 알림이 중지되었습니다. /start 명령어로 다시 시작할 수 있습니다.');
 });
 
-bot.onText(/\/status/, (msg) => {
+bot.onText(/\/status/, async (msg) => {
   const chatId = msg.chat.id;
   const isSubscribed = subscribers.has(chatId);
   const now = moment().tz('Asia/Seoul');
-  const todayTopic = aviationKnowledge[now.day()].topic;
   
-  bot.sendMessage(chatId, `
+  try {
+    const todayKnowledge = await getKnowledgeByDay(now.day());
+    
+    bot.sendMessage(chatId, `
 📊 **현재 상태**
 • 알림 상태: ${isSubscribed ? '✅ 활성화' : '❌ 비활성화'}
-• 오늘의 주제: ${todayTopic}
+• 오늘의 주제: ${todayKnowledge.topic}
 • 다음 알림: 오전 9시, 오후 2시, 저녁 8시
 • 구독자: ${subscribers.size}명
-  `, { parse_mode: 'Markdown' });
+• 데이터 소스: ${aviationKnowledgeService ? 'MySQL Database' : 'Fallback Data'}
+    `, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('Status command error:', error);
+    bot.sendMessage(chatId, '⚠️ 상태 조회 중 오류가 발생했습니다.');
+  }
 });
 
 bot.onText(/\/now/, async (msg) => {
@@ -267,9 +268,9 @@ bot.onText(/\/quiz( (.+))?/, async (msg, match) => {
       // 오늘의 주제에서 랜덤 선택
       const now = moment().tz('Asia/Seoul');
       const dayOfWeek = now.day();
-      const todayKnowledge = aviationKnowledge[dayOfWeek];
+      const todayKnowledge = await getKnowledgeByDay(dayOfWeek);
       topic = todayKnowledge.topic;
-      knowledgeArea = todayKnowledge.subjects[Math.floor(Math.random() * todayKnowledge.subjects.length)];
+      knowledgeArea = await getRandomSubject(dayOfWeek);
     }
     
     bot.sendMessage(chatId, '🤖 AI가 문제를 생성하고 있습니다... 잠시만 기다려 주세요!');
@@ -336,8 +337,32 @@ cron.schedule('0 20 * * *', async () => {
   timezone: "Asia/Seoul"
 });
 
-console.log('🤖 항공지식 알림 봇이 시작되었습니다!');
-console.log('📅 스케줄: 오전 9시, 오후 2시, 저녁 8시 (KST)');
+// 봇 시작 함수
+async function startBot() {
+  console.log('🚀 Starting Aviation Knowledge Bot...');
+  
+  // 데이터베이스 초기화
+  const dbInitialized = await initializeDatabase();
+  
+  console.log('🤖 항공지식 알림 봇이 시작되었습니다!');
+  console.log('📅 스케줄: 오전 9시, 오후 2시, 저녁 8시 (KST)');
+  console.log(`💾 데이터 소스: ${dbInitialized ? 'MySQL Database' : 'Fallback Data'}`);
+  
+  if (dbInitialized) {
+    try {
+      const stats = await aviationKnowledgeService.getStats();
+      console.log(`📊 Database Stats: ${stats.totalTopics} topics, ${stats.totalSubjects} subjects`);
+    } catch (error) {
+      console.warn('Failed to get database stats:', error.message);
+    }
+  }
+}
+
+// 봇 시작
+startBot().catch(error => {
+  console.error('Failed to start bot:', error);
+  process.exit(1);
+});
 
 // 에러 처리
 bot.on('error', (error) => {
@@ -346,4 +371,20 @@ bot.on('error', (error) => {
 
 process.on('unhandledRejection', (error) => {
   console.error('처리되지 않은 Promise 거부:', error);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM, shutting down gracefully...');
+  if (database) {
+    await database.close();
+  }
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT, shutting down gracefully...');
+  if (database) {
+    await database.close();
+  }
+  process.exit(0);
 });

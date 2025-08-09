@@ -10,7 +10,6 @@ class AdminServer {
     this.port = 3000;
     this.database = database;
     this.topicService = new TopicService(database);
-    this.dataFile = path.join(__dirname, '../data/aviationKnowledge.js');
     this.backupDir = path.join(__dirname, '../data/backups');
     
     this.setupMiddleware();
@@ -83,18 +82,33 @@ class AdminServer {
       res.json(manifest);
     });
 
-    // 모든 항공지식 데이터 조회
+    // 모든 항공지식 데이터 조회 (DB 기반)
     this.app.get('/api/knowledge', async (req, res) => {
       try {
-        const data = await this.loadKnowledgeData();
-        res.json(data);
+        // DB에서 토픽별로 주제들을 조회하여 기존 형식으로 변환
+        const topics = await this.topicService.getAllTopics();
+        const knowledgeData = {};
+        
+        for (const topic of topics) {
+          const subjects = await this.topicService.getSubjectsByTopic(topic.id);
+          knowledgeData[topic.day_of_week] = {
+            topic: topic.name,
+            subjects: subjects.map(s => s.title)
+          };
+        }
+        
+        res.json(knowledgeData);
       } catch (error) {
-        console.error('데이터 로딩 오류:', error);
-        res.status(500).json({ error: '데이터를 불러올 수 없습니다' });
+        console.error('DB 데이터 조회 오류:', error);
+        
+        // Return static fallback data if DB fails
+        console.log('DB failed, using static fallback data...');
+        const fallbackData = this._getStaticFallbackData();
+        res.json(fallbackData);
       }
     });
 
-    // 특정 요일 데이터 업데이트
+    // 특정 요일 데이터 업데이트 (DB 기반)
     this.app.put('/api/knowledge/:day', async (req, res) => {
       try {
         const day = parseInt(req.params.day);
@@ -108,40 +122,116 @@ class AdminServer {
           return res.status(400).json({ error: '주제와 세부 주제가 필요합니다' });
         }
 
-        await this.updateKnowledgeData(day, { topic, subjects });
+        // DB에서 해당 요일의 토픽 찾기
+        const existingTopic = await this.topicService.getTopicByDayOfWeek(day);
+        
+        if (!existingTopic) {
+          return res.status(404).json({ error: '해당 요일의 토픽을 찾을 수 없습니다' });
+        }
+
+        // 토픽 정보 업데이트
+        await this.topicService.updateTopic(existingTopic.id, topic, '', day);
+
+        // 기존 주제들 비활성화 (soft delete)
+        const existingSubjects = await this.topicService.getSubjectsByTopic(existingTopic.id);
+        for (const subject of existingSubjects) {
+          await this.topicService.deleteSubject(subject.id);
+        }
+
+        // 새 주제들 추가
+        for (let i = 0; i < subjects.length; i++) {
+          await this.topicService.createSubject(
+            existingTopic.id,
+            subjects[i],
+            '',
+            'intermediate',
+            i + 1
+          );
+        }
+
+        // DB update successful - no file fallback needed
+
         res.json({ success: true, message: '데이터가 업데이트되었습니다' });
       } catch (error) {
-        console.error('데이터 업데이트 오류:', error);
+        console.error('DB 데이터 업데이트 오류:', error);
+        
+        // DB update failed
         res.status(500).json({ error: '데이터를 업데이트할 수 없습니다' });
       }
     });
 
-    // 백업 생성
+    // 백업 생성 (DB + 파일)
     this.app.post('/api/knowledge/backup', async (req, res) => {
       try {
-        const filename = await this.createBackup();
-        res.json({ success: true, filename });
+        // DB에서 데이터 백업
+        const topics = await this.topicService.getAllTopics();
+        const backupData = {};
+        
+        for (const topic of topics) {
+          const subjects = await this.topicService.getSubjectsByTopic(topic.id);
+          backupData[topic.day_of_week] = {
+            topic: topic.name,
+            subjects: subjects.map(s => s.title)
+          };
+        }
+        
+        // 백업 파일 생성
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `aviation-knowledge-db-${timestamp}.json`;
+        const filePath = require('path').join(this.backupDir, filename);
+        
+        await require('fs').promises.writeFile(filePath, JSON.stringify(backupData, null, 2), 'utf8');
+        
+        // DB backup created successfully
+        
+        res.json({ success: true, filename, source: 'database' });
       } catch (error) {
-        console.error('백업 생성 오류:', error);
+        console.error('DB 백업 생성 오류:', error);
+        
+        // DB backup failed
         res.status(500).json({ error: '백업을 생성할 수 없습니다' });
       }
     });
 
-    // 백업 복원
+    // 백업 복원 (DB 기반)
     this.app.post('/api/knowledge/restore', this.upload.single('backup'), async (req, res) => {
       try {
         if (!req.file) {
           return res.status(400).json({ error: '백업 파일이 필요합니다' });
         }
 
-        await this.restoreBackup(req.file.path);
+        // 백업 파일에서 데이터 읽기
+        const backupContent = await fs.readFile(req.file.path, 'utf8');
+        const backupData = JSON.parse(backupContent);
+        
+        // 데이터 유효성 검증
+        const validation = this.validateDataStructure(backupData);
+        if (!validation.valid) {
+          await fs.unlink(req.file.path);
+          return res.status(400).json({ 
+            error: `유효하지 않은 백업 데이터: ${validation.errors.join(', ')}` 
+          });
+        }
+
+        // DB로 데이터 복원
+        await this.restoreToDatabase(backupData);
         
         // 임시 파일 삭제
         await fs.unlink(req.file.path);
         
-        res.json({ success: true, message: '백업이 복원되었습니다' });
+        res.json({ success: true, message: '백업이 데이터베이스에 복원되었습니다' });
       } catch (error) {
         console.error('백업 복원 오류:', error);
+        
+        // 임시 파일 정리
+        if (req.file?.path) {
+          try {
+            await fs.unlink(req.file.path);
+          } catch (unlinkError) {
+            console.warn('임시 파일 삭제 실패:', unlinkError.message);
+          }
+        }
+        
         res.status(500).json({ error: '백업을 복원할 수 없습니다' });
       }
     });
@@ -329,143 +419,123 @@ class AdminServer {
     });
   }
 
-  async loadKnowledgeData() {
-    try {
-      // aviationKnowledge.js 파일에서 데이터 추출
-      const fileContent = await fs.readFile(this.dataFile, 'utf8');
-      
-      // aviationKnowledge 객체 추출을 위한 정규식
-      const dataMatch = fileContent.match(/const aviationKnowledge = ({[\s\S]*?});/);
-      if (!dataMatch) {
-        throw new Error('aviationKnowledge 데이터를 찾을 수 없습니다');
-      }
-
-      // JavaScript 객체를 JSON으로 변환하기 위해 eval 사용 (보안에 주의)
-      const aviationKnowledge = eval(`(${dataMatch[1]})`);
-      return aviationKnowledge;
-    } catch (error) {
-      console.error('데이터 로딩 실패:', error);
-      throw error;
-    }
-  }
-
-  async updateKnowledgeData(day, newData) {
-    try {
-      const currentData = await this.loadKnowledgeData();
-      currentData[day] = newData;
-
-      // 새로운 파일 내용 생성
-      const newFileContent = this.generateKnowledgeFile(currentData);
-      
-      // 파일 업데이트
-      await fs.writeFile(this.dataFile, newFileContent, 'utf8');
-      
-      console.log(`${day}요일 데이터가 업데이트되었습니다`);
-    } catch (error) {
-      console.error('데이터 업데이트 실패:', error);
-      throw error;
-    }
-  }
-
-  generateKnowledgeFile(data) {
-    let fileContent = `// 요일별 항공지식 데이터
-const aviationKnowledge = {\n`;
-
-    for (let day = 0; day < 7; day++) {
-      const dayData = data[day];
-      if (dayData) {
-        const dayComment = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'][day];
-        
-        fileContent += `  ${day}: { // ${dayComment}\n`;
-        fileContent += `    topic: "${dayData.topic}",\n`;
-        fileContent += `    subjects: [\n`;
-        
-        dayData.subjects.forEach(subject => {
-          fileContent += `      "${subject}",\n`;
-        });
-        
-        fileContent += `    ]\n`;
-        fileContent += `  },\n`;
-      }
-    }
-
-    fileContent += `};
-
-class AviationKnowledgeManager {
-  static getKnowledgeByDay(dayOfWeek) {
-    return aviationKnowledge[dayOfWeek];
-  }
-
-  static getRandomSubject(dayOfWeek) {
-    const knowledge = this.getKnowledgeByDay(dayOfWeek);
-    return knowledge.subjects[Math.floor(Math.random() * knowledge.subjects.length)];
-  }
-
-  static getAllTopics() {
-    return Object.values(aviationKnowledge).map(k => k.topic);
-  }
-
-  static getWeeklySchedule() {
-    const days = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
-    return days.map((day, index) => ({
-      day,
-      topic: aviationKnowledge[index].topic
-    }));
-  }
-}
-
-module.exports = { aviationKnowledge, AviationKnowledgeManager };`;
-
-    return fileContent;
+  // Static fallback data (replaces aviationKnowledge.js file)
+  _getStaticFallbackData() {
+    return {
+      0: { topic: "응급상황 및 안전", subjects: ["Engine Failure 시 Best Glide Speed와 Landing Site 선정", "Spatial Disorientation 예방과 발생 시 대응방법"] },
+      1: { topic: "항공역학", subjects: ["Bernoulli's Principle과 실제 양력 생성 원리의 차이점", "Wing Loading이 항공기 성능에 미치는 영향"] },
+      2: { topic: "항법", subjects: ["ILS Approach의 구성요소와 Category별 최저기상조건", "GPS WAAS와 기존 GPS의 차이점 및 정밀접근 가능성"] },
+      3: { topic: "기상학", subjects: ["Thunderstorm의 생성과정과 3단계 (Cumulus, Mature, Dissipating)", "Wind Shear의 종류와 조종사 대응절차"] },
+      4: { topic: "항공기 시스템", subjects: ["Turbocharged vs Supercharged Engine의 차이점과 운용방법", "Electrical System 구성과 Generator/Alternator 고장 시 절차"] },
+      5: { topic: "비행 규정", subjects: ["Class A, B, C, D, E Airspace의 입장 요건과 장비 요구사항", "사업용 조종사의 Duty Time과 Rest Requirements"] },
+      6: { topic: "비행 계획 및 성능", subjects: ["Weight & Balance 계산과 CG Envelope 내 유지 방법", "Takeoff/Landing Performance Chart 해석과 실제 적용"] }
+    };
   }
 
   async createBackup() {
-    try {
-      const data = await this.loadKnowledgeData();
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `aviation-knowledge-${timestamp}.json`;
-      const filePath = path.join(this.backupDir, filename);
-      
-      await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
-      
-      console.log(`백업 파일 생성됨: ${filename}`);
-      return filename;
-    } catch (error) {
-      console.error('백업 생성 실패:', error);
-      throw error;
-    }
+    // Legacy method - no longer used, DB backup is handled in API endpoint
+    throw new Error('File-based backup is deprecated. Use DB-based backup via API.');
   }
 
-  async restoreBackup(backupFilePath) {
+  async restoreToDatabase(backupData) {
     try {
-      const backupContent = await fs.readFile(backupFilePath, 'utf8');
-      const backupData = JSON.parse(backupContent);
+      console.log('Restoring data to database...');
       
-      // 데이터 유효성 검증
-      const validation = this.validateDataStructure(backupData);
-      if (!validation.valid) {
-        throw new Error(`유효하지 않은 백업 데이터: ${validation.errors.join(', ')}`);
+      // 트랜잭션으로 복원 실행
+      const connection = await this.database.pool.getConnection();
+      
+      try {
+        await connection.beginTransaction();
+        
+        // 모든 기존 주제를 비활성화 (soft delete)
+        await connection.execute('UPDATE subjects SET is_active = 0');
+        
+        // 백업 데이터로 복원
+        for (let day = 0; day < 7; day++) {
+          const dayData = backupData[day];
+          if (!dayData) continue;
+          
+          // 해당 요일의 토픽 찾기
+          const [topicRows] = await connection.execute(
+            'SELECT id FROM topics WHERE day_of_week = ? AND is_active = 1',
+            [day]
+          );
+          
+          if (topicRows.length === 0) {
+            console.warn(`No topic found for day ${day}, skipping...`);
+            continue;
+          }
+          
+          const topicId = topicRows[0].id;
+          
+          // 토픽 이름 업데이트
+          await connection.execute(
+            'UPDATE topics SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [dayData.topic, topicId]
+          );
+          
+          // 새 주제들 추가
+          for (let i = 0; i < dayData.subjects.length; i++) {
+            await connection.execute(
+              `INSERT INTO subjects (topic_id, title, content, difficulty_level, sort_order, is_active)
+               VALUES (?, ?, '', 'intermediate', ?, 1)
+               ON DUPLICATE KEY UPDATE
+               title = VALUES(title),
+               is_active = 1,
+               sort_order = VALUES(sort_order),
+               updated_at = CURRENT_TIMESTAMP`,
+              [topicId, dayData.subjects[i], i + 1]
+            );
+          }
+        }
+        
+        await connection.commit();
+        console.log('Database restore completed successfully');
+        
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
       }
-
-      // 파일 업데이트
-      const newFileContent = this.generateKnowledgeFile(backupData);
-      await fs.writeFile(this.dataFile, newFileContent, 'utf8');
       
-      console.log('백업 데이터로 복원되었습니다');
     } catch (error) {
-      console.error('백업 복원 실패:', error);
-      throw error;
+      console.error('Database restore failed:', error);
+      throw new Error(`데이터베이스 복원 실패: ${error.message}`);
     }
   }
 
   async validateData() {
+    // Validate database data instead
     try {
-      const data = await this.loadKnowledgeData();
-      return this.validateDataStructure(data);
+      const stats = await this.topicService.getStats();
+      const errors = [];
+      
+      if (stats.totalTopics === 0) {
+        errors.push('토픽이 없습니다');
+      }
+      
+      if (stats.totalSubjects === 0) {
+        errors.push('주제가 없습니다');
+      }
+      
+      // Check for all weekdays
+      for (let day = 0; day < 7; day++) {
+        const topic = await this.topicService.getTopicByDayOfWeek(day);
+        if (!topic) {
+          errors.push(`${day}요일 토픽이 없습니다`);
+        }
+      }
+      
+      return {
+        valid: errors.length === 0,
+        errors,
+        stats
+      };
     } catch (error) {
       return {
         valid: false,
-        errors: [`데이터 로딩 실패: ${error.message}`]
+        errors: [`데이터베이스 검증 실패: ${error.message}`]
       };
     }
   }

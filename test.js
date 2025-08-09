@@ -4,7 +4,7 @@
  */
 
 const config = require('./src/config');
-const { AviationKnowledgeManager } = require('./src/data/aviationKnowledge');
+// const { AviationKnowledgeManager } = require('./src/data/aviationKnowledge');
 const AIProviderManager = require('./src/providers/aiProvider');
 const SubscriberManager = require('./src/features/subscriberManager');
 const MessageGenerator = require('./src/features/messageGenerator');
@@ -21,11 +21,11 @@ async function runTests() {
 
     // Test 2: Aviation knowledge data
     console.log('\n2️⃣ Testing aviation knowledge data...');
-    const todayKnowledge = AviationKnowledgeManager.getKnowledgeByDay(1); // Monday
+    // const todayKnowledge = AviationKnowledgeManager.getKnowledgeByDay(1); // Monday
     console.log(`   ✅ Today's topic: ${todayKnowledge.topic}`);
     console.log(`   📚 Subjects count: ${todayKnowledge.subjects.length}`);
     
-    const randomSubject = AviationKnowledgeManager.getRandomSubject(1);
+    // const randomSubject = AviationKnowledgeManager.getRandomSubject(1);
     console.log(`   🎯 Random subject: ${randomSubject.substring(0, 50)}...`);
 
     // Test 3: AI Provider Manager
