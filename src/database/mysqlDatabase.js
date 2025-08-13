@@ -11,9 +11,16 @@ class MySQLDatabase {
       password: config.DB_PASSWORD || '',
       database: config.DB_NAME || 'aviation_bot',
       charset: 'utf8mb4',
-      timezone: '+00:00',
-      // Remove MySQL2 incompatible options
-      ...config.dbOptions
+      timezone: '+00:00'
+    };
+    
+    // MySQL2 compatible pool options
+    this.poolOptions = {
+      waitForConnections: true,
+      connectionLimit: config.dbOptions?.connectionLimit || 10,
+      acquireTimeoutMillis: config.dbOptions?.acquireTimeoutMillis || 60000,
+      connectTimeout: config.dbOptions?.connectTimeout || 60000,
+      queueLimit: 0
     };
     
     this.pool = null;
@@ -27,9 +34,7 @@ class MySQLDatabase {
       // Connection pool 생성 (MySQL2 호환 설정)
       this.pool = mysql.createPool({
         ...this.config,
-        waitForConnections: true,
-        connectionLimit: this.config.connectionLimit || 10,
-        queueLimit: 0
+        ...this.poolOptions
       });
 
       // 연결 테스트

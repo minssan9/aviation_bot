@@ -16,10 +16,10 @@ class Config {
     this.DB_PASSWORD = process.env.DB_PASSWORD || '';
     this.DB_NAME = process.env.DB_NAME || 'aviation_bot';
     
-    // Database Options
+    // Database Options - MySQL2 compatible
     this.DB_CONNECTION_LIMIT = parseInt(process.env.DB_CONNECTION_LIMIT) || 10;
-    this.DB_ACQUIRE_TIMEOUT = parseInt(process.env.DB_ACQUIRE_TIMEOUT) || 60000;
-    this.DB_TIMEOUT = parseInt(process.env.DB_TIMEOUT) || 60000;
+    this.DB_ACQUIRE_TIMEOUT_MILLIS = parseInt(process.env.DB_ACQUIRE_TIMEOUT_MILLIS) || 60000;
+    this.DB_CONNECT_TIMEOUT = parseInt(process.env.DB_CONNECT_TIMEOUT) || 60000;
     
     // Environment
     this.NODE_ENV = process.env.NODE_ENV || 'development';
@@ -73,11 +73,11 @@ class Config {
       DB_PASSWORD: this.DB_PASSWORD,
       DB_NAME: this.DB_NAME,
       
-      // Database Options
+      // Database Options - MySQL2 compatible
       dbOptions: {
         connectionLimit: this.DB_CONNECTION_LIMIT,
-        acquireTimeout: this.DB_ACQUIRE_TIMEOUT,
-        timeout: this.DB_TIMEOUT
+        acquireTimeoutMillis: this.DB_ACQUIRE_TIMEOUT_MILLIS,
+        connectTimeout: this.DB_CONNECT_TIMEOUT
       },
       
       // Environment
