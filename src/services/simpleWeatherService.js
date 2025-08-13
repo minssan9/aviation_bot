@@ -16,10 +16,71 @@ class SimpleWeatherService {
   }
 
   /**
+   * 기존 파일들을 날짜별 디렉토리로 마이그레이션
+   */
+  async migrateExistingFiles() {
+    try {
+      console.log('🔄 기존 파일 마이그레이션 시작...');
+      
+      const files = await fs.readdir(this.baseImageDir);
+      const imageFiles = files.filter(file => 
+        file.startsWith('kma_ko_rgb_') && file.endsWith('.png')
+      );
+      
+      if (imageFiles.length === 0) {
+        console.log('✅ 마이그레이션할 파일이 없습니다.');
+        return { migrated: 0, errors: 0 };
+      }
+      
+      console.log(`📄 마이그레이션 대상 파일: ${imageFiles.length}개`);
+      
+      let migrated = 0;
+      let errors = 0;
+      
+      for (const file of imageFiles) {
+        try {
+          // 파일명에서 타임스탬프 추출
+          const timestampMatch = file.match(/kma_ko_rgb_(\d{12})\.png/);
+          if (!timestampMatch) {
+            console.log(`⚠️ 타임스탬프 추출 실패: ${file}`);
+            errors++;
+            continue;
+          }
+          
+          const timestamp = timestampMatch[1];
+          const sourcePath = path.join(this.baseImageDir, file);
+          const targetDir = await this.createDateDirectory(timestamp);
+          const targetPath = path.join(targetDir, file);
+          
+          // 파일 이동
+          await fs.rename(sourcePath, targetPath);
+          console.log(`✅ 마이그레이션 완료: ${file} → ${path.relative(this.baseImageDir, targetPath)}`);
+          migrated++;
+          
+        } catch (error) {
+          console.error(`❌ 마이그레이션 실패 (${file}):`, error.message);
+          errors++;
+        }
+      }
+      
+      console.log(`🎉 마이그레이션 완료: ${migrated}개 성공, ${errors}개 실패`);
+      return { migrated, errors };
+      
+    } catch (error) {
+      console.error('❌ 마이그레이션 오류:', error);
+      return { migrated: 0, errors: 1 };
+    }
+  }
+
+  /**
    * 서비스 초기화
    */
   async initialize() {
     await fs.mkdir(this.baseImageDir, { recursive: true });
+    
+    // 기존 파일 마이그레이션 실행
+    await this.migrateExistingFiles();
+    
     console.log('✅ SimpleWeatherService 초기화 완료');
   }
 
@@ -95,6 +156,33 @@ class SimpleWeatherService {
   }
 
   /**
+   * 타임스탬프에서 날짜 정보 추출하여 디렉토리 경로 생성
+   */
+  parseTimestampToPath(timestamp) {
+    // 타임스탬프 형식: YYYYMMDDHHMM (예: 202501131600)
+    if (!timestamp || timestamp.length !== 12) {
+      throw new Error(`Invalid timestamp format: ${timestamp}`);
+    }
+    
+    const year = timestamp.substring(0, 4);
+    const month = timestamp.substring(4, 6);
+    const day = timestamp.substring(6, 8);
+    
+    return path.join(year, month, day);
+  }
+
+  /**
+   * 타임스탬프 기반 디렉토리 생성
+   */
+  async createDateDirectory(timestamp) {
+    const datePath = this.parseTimestampToPath(timestamp);
+    const fullPath = path.join(this.baseImageDir, datePath);
+    
+    await fs.mkdir(fullPath, { recursive: true });
+    return fullPath;
+  }
+
+  /**
    * 파일명 생성 (API 타임스탬프 기반)
    */
   generateFilename(timestamp) {
@@ -119,13 +207,28 @@ class SimpleWeatherService {
 
     const { url, timestamp, name } = imageInfo;
     const filename = this.generateFilename(timestamp);
-    const filepath = path.join(this.baseImageDir, filename);
+    
+    // 2. 날짜별 디렉토리 생성
+    let dateDirectory;
+    try {
+      dateDirectory = await this.createDateDirectory(timestamp);
+    } catch (error) {
+      return {
+        success: false,
+        error: `디렉토리 생성 실패: ${error.message}`,
+        timestamp,
+        url
+      };
+    }
+    
+    const filepath = path.join(dateDirectory, filename);
 
     let attempt = 0;
     while (attempt < this.maxRetries) {
       try {
         console.log(`📥 이미지 다운로드 시도 ${attempt + 1}/${this.maxRetries}: ${filename}`);
         console.log(`🔗 다운로드 URL: ${url}`);
+        console.log(`📁 저장 경로: ${filepath}`);
         
         const response = await axios({
           method: 'GET',
@@ -157,6 +260,7 @@ class SimpleWeatherService {
           console.log(`✅ 이미지 저장 성공: ${filename} (${sizeKB}KB)`);
           console.log(`📅 타임스탬프: ${timestamp}`);
           console.log(`📝 이미지명: ${name}`);
+          console.log(`📁 저장 위치: ${filepath}`);
           
           return {
             success: true,
@@ -191,26 +295,61 @@ class SimpleWeatherService {
   }
 
   /**
-   * 오래된 이미지 정리
+   * 오래된 이미지 정리 (재귀적으로 날짜별 디렉토리 검색)
    */
   async cleanup(daysToKeep = 7) {
     try {
-      const files = await fs.readdir(this.baseImageDir);
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-
-      let deletedCount = 0;
       
-      for (const file of files) {
-        if (file.startsWith('kma_ko_rgb_')) {
-          const filepath = path.join(this.baseImageDir, file);
-          const stats = await fs.stat(filepath);
+      let deletedCount = 0;
+      let emptyDirectories = [];
+
+      // 재귀적으로 모든 하위 디렉토리 검색
+      const processDirectory = async (dirPath) => {
+        try {
+          const items = await fs.readdir(dirPath);
           
-          if (stats.mtime < cutoffDate) {
-            await fs.unlink(filepath);
-            deletedCount++;
-            console.log(`🗑️ 삭제: ${file}`);
+          for (const item of items) {
+            const itemPath = path.join(dirPath, item);
+            const stats = await fs.stat(itemPath);
+            
+            if (stats.isDirectory()) {
+              // 디렉토리인 경우 재귀적으로 처리
+              const subDeleted = await processDirectory(itemPath);
+              deletedCount += subDeleted;
+              
+              // 하위 디렉토리가 비어있는지 확인
+              const subItems = await fs.readdir(itemPath);
+              if (subItems.length === 0) {
+                emptyDirectories.push(itemPath);
+              }
+            } else if (stats.isFile() && item.startsWith('kma_ko_rgb_') && item.endsWith('.png')) {
+              // 이미지 파일인 경우 날짜 확인
+              if (stats.mtime < cutoffDate) {
+                await fs.unlink(itemPath);
+                deletedCount++;
+                console.log(`🗑️ 삭제: ${itemPath}`);
+              }
+            }
           }
+          
+          return deletedCount;
+        } catch (error) {
+          console.error(`❌ 디렉토리 처리 오류 (${dirPath}):`, error.message);
+          return 0;
+        }
+      };
+
+      await processDirectory(this.baseImageDir);
+      
+      // 빈 디렉토리 정리
+      for (const emptyDir of emptyDirectories) {
+        try {
+          await fs.rmdir(emptyDir);
+          console.log(`🗑️ 빈 디렉토리 삭제: ${emptyDir}`);
+        } catch (error) {
+          console.error(`❌ 빈 디렉토리 삭제 실패 (${emptyDir}):`, error.message);
         }
       }
 
@@ -223,34 +362,113 @@ class SimpleWeatherService {
   }
 
   /**
-   * 저장된 이미지 목록
+   * 저장된 이미지 목록 (재귀적으로 날짜별 디렉토리 검색)
    */
   async getStoredImages(limit = 20) {
     try {
-      const files = await fs.readdir(this.baseImageDir);
-      const imageFiles = files
-        .filter(file => file.startsWith('kma_ko_rgb_') && file.endsWith('.png'))
-        .sort((a, b) => b.localeCompare(a))
+      const allImages = [];
+
+      // 재귀적으로 모든 하위 디렉토리에서 이미지 파일 수집
+      const collectImages = async (dirPath) => {
+        try {
+          const items = await fs.readdir(dirPath);
+          
+          for (const item of items) {
+            const itemPath = path.join(dirPath, item);
+            const stats = await fs.stat(itemPath);
+            
+            if (stats.isDirectory()) {
+              // 디렉토리인 경우 재귀적으로 처리
+              await collectImages(itemPath);
+            } else if (stats.isFile() && item.startsWith('kma_ko_rgb_') && item.endsWith('.png')) {
+              // 이미지 파일인 경우 목록에 추가
+              allImages.push({
+                filename: item,
+                filepath: itemPath,
+                size: stats.size,
+                created: stats.birthtime,
+                modified: stats.mtime,
+                relativePath: path.relative(this.baseImageDir, itemPath)
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`❌ 디렉토리 검색 오류 (${dirPath}):`, error.message);
+        }
+      };
+
+      await collectImages(this.baseImageDir);
+      
+      // 수정일 기준으로 정렬하고 제한된 개수만 반환
+      const sortedImages = allImages
+        .sort((a, b) => b.modified.getTime() - a.modified.getTime())
         .slice(0, limit);
 
-      const results = [];
-      for (const file of imageFiles) {
-        const filepath = path.join(this.baseImageDir, file);
-        const stats = await fs.stat(filepath);
-        
-        results.push({
-          filename: file,
-          filepath,
-          size: stats.size,
-          created: stats.birthtime,
-          modified: stats.mtime
-        });
-      }
-
-      return results;
+      return sortedImages;
     } catch (error) {
       console.error('❌ 목록 조회 오류:', error);
       return [];
+    }
+  }
+
+  /**
+   * 디렉토리 구조 정보 조회
+   */
+  async getDirectoryStructure() {
+    try {
+      const structure = {
+        basePath: this.baseImageDir,
+        totalFiles: 0,
+        totalSize: 0,
+        directories: {},
+        summary: {}
+      };
+
+      const processDirectory = async (dirPath, relativePath = '') => {
+        try {
+          const items = await fs.readdir(dirPath);
+          const dirInfo = {
+            files: 0,
+            size: 0,
+            subdirs: {}
+          };
+
+          for (const item of items) {
+            const itemPath = path.join(dirPath, item);
+            const stats = await fs.stat(itemPath);
+            
+            if (stats.isDirectory()) {
+              const subRelativePath = relativePath ? `${relativePath}/${item}` : item;
+              dirInfo.subdirs[item] = await processDirectory(itemPath, subRelativePath);
+            } else if (stats.isFile() && item.startsWith('kma_ko_rgb_') && item.endsWith('.png')) {
+              dirInfo.files++;
+              dirInfo.size += stats.size;
+              structure.totalFiles++;
+              structure.totalSize += stats.size;
+            }
+          }
+
+          return dirInfo;
+        } catch (error) {
+          console.error(`❌ 디렉토리 구조 분석 오류 (${dirPath}):`, error.message);
+          return { files: 0, size: 0, subdirs: {} };
+        }
+      };
+
+      structure.directories = await processDirectory(this.baseImageDir);
+      
+      // 요약 정보 생성
+      structure.summary = {
+        totalFiles: structure.totalFiles,
+        totalSizeMB: (structure.totalSize / (1024 * 1024)).toFixed(2),
+        totalSizeGB: (structure.totalSize / (1024 * 1024 * 1024)).toFixed(3),
+        directoryCount: Object.keys(structure.directories.subdirs || {}).length
+      };
+
+      return structure;
+    } catch (error) {
+      console.error('❌ 디렉토리 구조 조회 오류:', error);
+      return null;
     }
   }
 
