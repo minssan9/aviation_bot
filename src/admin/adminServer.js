@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const multer = require('multer');
 const TopicService = require('../services/topicService');
+const SimpleWeatherService = require('../services/simpleWeatherService');
 
 class AdminServer {
   constructor(database) {
@@ -10,11 +11,13 @@ class AdminServer {
     this.port = 3000;
     this.database = database;
     this.topicService = new TopicService(database);
+    this.weatherImageService = new SimpleWeatherService();
     this.backupDir = path.join(__dirname, '../data/backups');
     
     this.setupMiddleware();
     this.setupRoutes();
     this.ensureBackupDir();
+    this.initializeWeatherService();
   }
 
   setupMiddleware() {
@@ -40,6 +43,15 @@ class AdminServer {
       await fs.mkdir(this.backupDir, { recursive: true });
     } catch (error) {
       console.error('백업 디렉토리 생성 실패:', error);
+    }
+  }
+
+  async initializeWeatherService() {
+    try {
+      await this.weatherImageService.initialize();
+      console.log('✅ SimpleWeatherService initialized for admin server');
+    } catch (error) {
+      console.error('❌ SimpleWeatherService initialization failed:', error);
     }
   }
 
@@ -415,6 +427,122 @@ class AdminServer {
       } catch (error) {
         console.error('통계 조회 오류:', error);
         res.status(500).json({ error: '통계를 조회할 수 없습니다' });
+      }
+    });
+
+    // === KMA 위성사진 수집 API ===
+    
+    // 위성사진 수집 실행
+    this.app.post('/api/weather/collect', async (req, res) => {
+      try {
+        console.log('📡 위성사진 수집 API 호출');
+        const result = await this.weatherImageService.downloadImage();
+        
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          result: result
+        });
+      } catch (error) {
+        console.error('위성사진 수집 API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // 위성사진 직접 수집
+    this.app.post('/api/weather/kma/collect', async (req, res) => {
+      try {
+        console.log('🛰️ 위성사진 직접 수집 API 호출');
+        
+        const result = await this.weatherImageService.downloadImage();
+        
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          result: result
+        });
+      } catch (error) {
+        console.error('위성사진 직접 수집 API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // 저장된 위성사진 목록 조회
+    this.app.get('/api/weather/images', async (req, res) => {
+      try {
+        const limit = parseInt(req.query.limit) || 20;
+        const images = await this.weatherImageService.getStoredImages(limit);
+        
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          count: images.length,
+          images: images.map(image => ({
+            filename: image.filename,
+            size: image.size,
+            sizeKB: Math.round(image.size / 1024),
+            sizeMB: Math.round(image.size / 1024 / 1024 * 10) / 10,
+            created: image.created,
+            modified: image.modified,
+            filepath: image.filepath
+          }))
+        });
+      } catch (error) {
+        console.error('이미지 목록 조회 API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // 위성사진 서비스 상태 확인
+    this.app.get('/api/weather/kma/status', async (req, res) => {
+      try {
+        const status = await this.weatherImageService.getStatus();
+        
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          status: status.status,
+          currentTimestamp: status.currentTimestamp,
+          testUrl: status.testUrl,
+          error: status.error
+        });
+      } catch (error) {
+        console.error('위성사진 서비스 상태 조회 API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // 위성사진 정리 (cleanup)
+    this.app.post('/api/weather/cleanup', async (req, res) => {
+      try {
+        const daysToKeep = parseInt(req.body.daysToKeep) || 7;
+        const deletedCount = await this.weatherImageService.cleanup(daysToKeep);
+        
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          deletedCount,
+          daysToKeep,
+          message: `${deletedCount}개 파일이 삭제되었습니다`
+        });
+      } catch (error) {
+        console.error('이미지 정리 API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
       }
     });
   }

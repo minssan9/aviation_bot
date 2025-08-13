@@ -58,16 +58,17 @@ class AviationBot {
 
       // Initialize other components with aviation knowledge service
       this.messageGenerator = new MessageGenerator(this.aiProvider, this.aviationKnowledgeService);
-      this.commandHandlers = new CommandHandlers(
-        this.bot, 
-        this.userService, 
-        this.messageGenerator,
-        this.aiProvider
-      );
       this.scheduler = new Scheduler(
         this.bot,
         this.userService,
         this.messageGenerator
+      );
+      this.commandHandlers = new CommandHandlers(
+        this.bot, 
+        this.userService, 
+        this.messageGenerator,
+        this.aiProvider,
+        this.scheduler
       );
 
       // Initialize Admin Server with database

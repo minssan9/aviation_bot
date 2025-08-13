@@ -24,6 +24,9 @@ class Config {
     // Environment
     this.NODE_ENV = process.env.NODE_ENV || 'development';
     
+    // Base Path
+    this.BASE_PATH = process.env.BASE_PATH || '/Volumes/SSD-NVMe-2';
+    
     this.validate();
   }
 
@@ -78,7 +81,10 @@ class Config {
       },
       
       // Environment
-      NODE_ENV: this.NODE_ENV
+      NODE_ENV: this.NODE_ENV,
+      
+      // Base Path
+      BASE_PATH: this.BASE_PATH
     };
   }
 }

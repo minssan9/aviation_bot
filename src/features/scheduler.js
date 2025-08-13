@@ -1,10 +1,12 @@
 const cron = require('node-cron');
+const SimpleWeatherService = require('../services/simpleWeatherService');
 
 class Scheduler {
   constructor(bot, subscriberManager, messageGenerator) {
     this.bot = bot;
     this.subscriberManager = subscriberManager;
     this.messageGenerator = messageGenerator;
+    this.simpleWeatherService = new SimpleWeatherService();
     this.jobs = [];
   }
 
@@ -98,8 +100,31 @@ class Scheduler {
     return results[0]; // 첫 번째 메시지 결과 반환
   }
 
-  start() {
+  async start() {
     console.log('📅 스케줄러 시작: 오전 9시, 오후 2시, 저녁 8시 (KST)');
+    
+    // SimpleWeatherService 초기화
+    try {
+      await this.simpleWeatherService.initialize();
+    } catch (error) {
+      console.error('❌ SimpleWeatherService 초기화 실패:', error);
+    }
+    
+    // 위성사진 수집 (매 10분마다)
+    const weatherImageJob = cron.schedule('*/10 * * * *', async () => {
+      await this.collectWeatherImages();
+    }, {
+      scheduled: false,
+      timezone: "Asia/Seoul"
+    });
+
+    // 위성사진 정리 (매일 새벽 3시 - 일주일 이상 된 파일)
+    const cleanupJob = cron.schedule('0 3 * * *', async () => {
+      await this.cleanupWeatherImages();
+    }, {
+      scheduled: false,
+      timezone: "Asia/Seoul"
+    });
     
     // 오전 9시 알림
     const morningJob = cron.schedule('0 9 * * *', async () => {
@@ -126,6 +151,8 @@ class Scheduler {
     });
 
     this.jobs.push(
+      { name: 'weather-images', job: weatherImageJob },
+      { name: 'cleanup', job: cleanupJob },
       { name: 'morning', job: morningJob },
       { name: 'afternoon', job: afternoonJob },
       { name: 'evening', job: eveningJob }
@@ -158,6 +185,150 @@ class Scheduler {
       console.log(`✅ ${timeSlot} 알림 완료`);
     } catch (error) {
       console.error(`❌ ${timeSlot} 알림 오류:`, error);
+    }
+  }
+
+  /**
+   * 위성사진 수집 작업 (API 기반)
+   */
+  async collectWeatherImages() {
+    try {
+      console.log('🛰️ 위성사진 수집 작업 시작');
+      
+      // 1. API 상태 확인
+      const status = await this.simpleWeatherService.getStatus();
+      if (status.status !== 'available') {
+        console.warn(`⚠️ 서비스 상태: ${status.status}`);
+        if (status.error) {
+          console.warn(`⚠️ 오류: ${status.error}`);
+        }
+      }
+      
+      // 2. 최신 이미지 정보 조회
+      const imageInfo = await this.simpleWeatherService.getLatestImageUrl();
+      if (!imageInfo.success) {
+        console.error(`❌ 이미지 URL 조회 실패: ${imageInfo.error}`);
+        return { success: false, error: `API 조회 실패: ${imageInfo.error}` };
+      }
+      
+      console.log(`📸 최신 이미지 발견: ${imageInfo.name}`);
+      console.log(`📅 타임스탬프: ${imageInfo.timestamp}`);
+      
+      // 3. 이미지 다운로드
+      const result = await this.simpleWeatherService.downloadImage();
+      
+      if (result.success) {
+        const sizeKB = (result.size / 1024).toFixed(1);
+        console.log(`✅ 위성사진 수집 완료: ${result.filename} (${sizeKB}KB)`);
+        console.log(`📅 수집 시간: ${result.timestamp}`);
+        console.log(`📝 이미지명: ${result.name}`);
+      } else {
+        console.warn(`⚠️ 위성사진 수집 실패: ${result.error}`);
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('❌ 위성사진 수집 오류:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 오래된 위성사진 정리 작업 (API 기반)
+   */
+  async cleanupWeatherImages() {
+    try {
+      console.log('🧹 위성사진 정리 작업 시작');
+      
+      // 1. 현재 저장된 이미지 목록 확인
+      const currentImages = await this.simpleWeatherService.getStoredImages(10);
+      console.log(`📁 현재 저장된 이미지: ${currentImages.length}개`);
+      
+      // 2. 이미지 정리 (7일 보관)
+      const deletedCount = await this.simpleWeatherService.cleanup(7);
+      
+      if (deletedCount > 0) {
+        console.log(`✅ 위성사진 정리 완료: ${deletedCount}개 파일 삭제`);
+        
+        // 3. 정리 후 이미지 목록 확인
+        const remainingImages = await this.simpleWeatherService.getStoredImages(5);
+        console.log(`📁 정리 후 남은 이미지: ${remainingImages.length}개`);
+        
+        if (remainingImages.length > 0) {
+          console.log('📋 최근 이미지들:');
+          remainingImages.slice(0, 3).forEach((img, index) => {
+            const sizeKB = (img.size / 1024).toFixed(1);
+            console.log(`  ${index + 1}. ${img.filename} (${sizeKB}KB)`);
+          });
+        }
+      } else {
+        console.log('ℹ️ 삭제할 오래된 파일이 없습니다');
+      }
+      
+      return deletedCount;
+    } catch (error) {
+      console.error('❌ 위성사진 정리 오류:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * 수동 위성사진 수집 (테스트용)
+   */
+  async manualWeatherImageCollection() {
+    console.log('🔧 수동 위성사진 수집 실행');
+    
+    try {
+      // 1. 서비스 상태 확인
+      console.log('📊 서비스 상태 확인 중...');
+      const status = await this.simpleWeatherService.getStatus();
+      console.log('📈 상태:', JSON.stringify(status, null, 2));
+      
+      // 2. 최신 이미지 정보 미리보기
+      console.log('🔍 최신 이미지 정보 조회 중...');
+      const imageInfo = await this.simpleWeatherService.getLatestImageUrl();
+      if (imageInfo.success) {
+        console.log('📸 최신 이미지 정보:', JSON.stringify(imageInfo, null, 2));
+      }
+      
+      // 3. 수집 실행
+      return await this.collectWeatherImages();
+    } catch (error) {
+      console.error('❌ 수동 수집 중 오류:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 저장된 위성사진 목록 조회 (API 기반)
+   */
+  async getStoredWeatherImages(limit = 20) {
+    try {
+      console.log(`📁 저장된 위성사진 목록 조회 (최대 ${limit}개)`);
+      
+      const images = await this.simpleWeatherService.getStoredImages(limit);
+      
+      if (images.length > 0) {
+        console.log(`✅ ${images.length}개 이미지 발견`);
+        
+        // 상세 정보 출력
+        images.slice(0, 5).forEach((img, index) => {
+          const sizeKB = (img.size / 1024).toFixed(1);
+          const created = new Date(img.created).toLocaleString('ko-KR');
+          console.log(`  ${index + 1}. ${img.filename} (${sizeKB}KB) - ${created}`);
+        });
+        
+        if (images.length > 5) {
+          console.log(`  ... 외 ${images.length - 5}개 더`);
+        }
+      } else {
+        console.log('ℹ️ 저장된 이미지가 없습니다');
+      }
+      
+      return images;
+    } catch (error) {
+      console.error('❌ 위성사진 목록 조회 오류:', error);
+      return [];
     }
   }
 
