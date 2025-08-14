@@ -1,0 +1,318 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Gemini API Integration Setup",
+        "description": "Configure Gemini API integration for text generation using the en9door_bot.md prompt template",
+        "details": "Set up Google Gemini API credentials, create text generation service, implement prompt formatting logic to generate structured English word content with definitions, pronunciation, examples, and hashtags. Include error handling and rate limiting.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [],
+        "testStrategy": "Test API connection and verify generated text follows the required format with proper Korean and English content structure."
+      },
+      {
+        "id": 2,
+        "title": "Image Generation Service",
+        "description": "Create image generation service to convert text content into Instagram-optimized images",
+        "details": "Implement image generation using Canvas or Sharp library. Create 1080x1920px images with text overlay, proper fonts, colors, and layout. Support Korean and English text rendering with organized layout for word, pronunciation, definition, and examples.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "testStrategy": "Generate test images and verify they meet Instagram Reels specifications with readable text on mobile devices."
+      },
+      {
+        "id": 3,
+        "title": "Video Creation Service",
+        "description": "Develop video creation service to generate 20-second Instagram Reels videos",
+        "details": "Use FFmpeg or MoviePy to create videos with smooth transitions, text animations (fade in, slide effects), background music, and proper 9:16 aspect ratio. Optimize for mobile viewing and Instagram Reels specifications.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "testStrategy": "Create test videos and verify they meet Instagram Reels requirements with proper duration, aspect ratio, and visual quality."
+      },
+      {
+        "id": 4,
+        "title": "Instagram API Integration",
+        "description": "Integrate Instagram Graph API for automated posting of Reels content",
+        "details": "Set up Instagram Graph API authentication, implement video upload functionality, add caption with generated text content, include hashtags and website link. Handle posting errors and implement retry mechanisms.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "testStrategy": "Test posting functionality with sample content and verify successful upload with proper caption and hashtags."
+      },
+      {
+        "id": 5,
+        "title": "Content Management System",
+        "description": "Create system to manage generated content, posting history, and analytics",
+        "details": "Implement database storage for generated content, posting history, engagement tracking, and API credentials. Create backup and recovery mechanisms for content and analytics data.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "testStrategy": "Test data storage and retrieval, verify backup functionality, and check analytics tracking accuracy."
+      },
+      {
+        "id": 6,
+        "title": "Error Handling and Monitoring",
+        "description": "Implement comprehensive error handling and monitoring system",
+        "details": "Create error handling for API failures, implement retry mechanisms, add logging and monitoring for debugging. Include rate limiting to prevent API abuse and graceful degradation.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          4
+        ],
+        "testStrategy": "Test error scenarios, verify retry mechanisms work correctly, and ensure proper logging and monitoring."
+      },
+      {
+        "id": 7,
+        "title": "Web Interface Development",
+        "description": "Create web interface for manual triggering and content management",
+        "details": "Develop simple web interface for manual content generation, dashboard to view generated content and posting status, configuration panel for API keys and settings. Include content preview and editing capabilities.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "testStrategy": "Test web interface functionality, verify content preview and editing features, and ensure proper configuration management."
+      },
+      {
+        "id": 8,
+        "title": "Security Implementation",
+        "description": "Implement security measures for API keys and data protection",
+        "details": "Secure storage of API keys using environment variables, implement proper authentication and authorization, add data encryption for sensitive information, and ensure compliance with security best practices.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          1,
+          4
+        ],
+        "testStrategy": "Verify secure storage of credentials, test authentication mechanisms, and ensure data protection compliance."
+      },
+      {
+        "id": 9,
+        "title": "Content Quality Assurance",
+        "description": "Implement content validation and quality checks",
+        "details": "Add validation for generated text content, image quality checks, video format verification, and content moderation compliance. Ensure generated content meets Instagram's community guidelines.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "testStrategy": "Test content validation rules, verify quality checks, and ensure compliance with platform guidelines."
+      },
+      {
+        "id": 10,
+        "title": "Automation and Scheduling",
+        "description": "Implement automated scheduling and daily content generation",
+        "details": "Create automated daily content generation system, implement scheduling for optimal posting times, add support for batch processing and queue management for multiple posts.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7
+        ],
+        "testStrategy": "Test automated scheduling, verify daily generation works correctly, and ensure proper queue management."
+      },
+      {
+        "id": 11,
+        "title": "Testing and Quality Assurance",
+        "description": "Comprehensive testing of all components and integration",
+        "details": "Perform unit testing for all services, integration testing for API interactions, end-to-end testing for complete workflow, and performance testing for scalability. Include user acceptance testing.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          8,
+          9
+        ],
+        "testStrategy": "Execute all test suites, verify integration points, and ensure system reliability and performance."
+      },
+      {
+        "id": 12,
+        "title": "Deployment and Documentation",
+        "description": "Deploy the system and create comprehensive documentation",
+        "details": "Prepare production deployment, create user documentation, API documentation, and maintenance guides. Include monitoring setup and backup procedures for production environment.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          11
+        ],
+        "testStrategy": "Verify production deployment, test monitoring and backup procedures, and validate documentation accuracy."
+      }
+    ],
+    "metadata": {
+      "version": "1.0",
+      "created": "2024-12-19T10:00:00.000Z",
+      "lastModified": "2024-12-19T10:00:00.000Z",
+      "projectName": "Instagram Reels Automation",
+      "description": "Automated Instagram Reels generation and posting system for educational English content"
+    }
+  },
+  "instagram-reels-automation": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Gemini API Integration Setup",
+        "description": "Configure Gemini API integration for text generation using the en9door_bot.md prompt template",
+        "details": "Set up Google Gemini API credentials, create text generation service, implement prompt formatting logic to generate structured English word content with definitions, pronunciation, examples, and hashtags. Include error handling and rate limiting.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [],
+        "testStrategy": "Test API connection and verify generated text follows the required format with proper Korean and English content structure."
+      },
+      {
+        "id": 2,
+        "title": "Image Generation Service",
+        "description": "Create image generation service to convert text content into Instagram-optimized images",
+        "details": "Implement image generation using Canvas or Sharp library. Create 1080x1920px images with text overlay, proper fonts, colors, and layout. Support Korean and English text rendering with organized layout for word, pronunciation, definition, and examples.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "testStrategy": "Generate test images and verify they meet Instagram Reels specifications with readable text on mobile devices."
+      },
+      {
+        "id": 3,
+        "title": "Video Creation Service",
+        "description": "Develop video creation service to generate 20-second Instagram Reels videos",
+        "details": "Use FFmpeg or MoviePy to create videos with smooth transitions, text animations (fade in, slide effects), background music, and proper 9:16 aspect ratio. Optimize for mobile viewing and Instagram Reels specifications.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "testStrategy": "Create test videos and verify they meet Instagram Reels requirements with proper duration, aspect ratio, and visual quality."
+      },
+      {
+        "id": 4,
+        "title": "Instagram API Integration",
+        "description": "Integrate Instagram Graph API for automated posting of Reels content",
+        "details": "Set up Instagram Graph API authentication, implement video upload functionality, add caption with generated text content, include hashtags and website link. Handle posting errors and implement retry mechanisms.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "testStrategy": "Test posting functionality with sample content and verify successful upload with proper caption and hashtags."
+      },
+      {
+        "id": 5,
+        "title": "Content Management System",
+        "description": "Create system to manage generated content, posting history, and analytics",
+        "details": "Implement database storage for generated content, posting history, engagement tracking, and API credentials. Create backup and recovery mechanisms for content and analytics data.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "testStrategy": "Test data storage and retrieval, verify backup functionality, and check analytics tracking accuracy."
+      },
+      {
+        "id": 6,
+        "title": "Error Handling and Monitoring",
+        "description": "Implement comprehensive error handling and monitoring system",
+        "details": "Create error handling for API failures, implement retry mechanisms, add logging and monitoring for debugging. Include rate limiting to prevent API abuse and graceful degradation.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          4
+        ],
+        "testStrategy": "Test error scenarios, verify retry mechanisms work correctly, and ensure proper logging and monitoring."
+      },
+      {
+        "id": 7,
+        "title": "Web Interface Development",
+        "description": "Create web interface for manual triggering and content management",
+        "details": "Develop simple web interface for manual content generation, dashboard to view generated content and posting status, configuration panel for API keys and settings. Include content preview and editing capabilities.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "testStrategy": "Test web interface functionality, verify content preview and editing features, and ensure proper configuration management."
+      },
+      {
+        "id": 8,
+        "title": "Security Implementation",
+        "description": "Implement security measures for API keys and data protection",
+        "details": "Secure storage of API keys using environment variables, implement proper authentication and authorization, add data encryption for sensitive information, and ensure compliance with security best practices.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          1,
+          4
+        ],
+        "testStrategy": "Verify secure storage of credentials, test authentication mechanisms, and ensure data protection compliance."
+      },
+      {
+        "id": 9,
+        "title": "Content Quality Assurance",
+        "description": "Implement content validation and quality checks",
+        "details": "Add validation for generated text content, image quality checks, video format verification, and content moderation compliance. Ensure generated content meets Instagram's community guidelines.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "testStrategy": "Test content validation rules, verify quality checks, and ensure compliance with platform guidelines."
+      },
+      {
+        "id": 10,
+        "title": "Automation and Scheduling",
+        "description": "Implement automated scheduling and daily content generation",
+        "details": "Create automated daily content generation system, implement scheduling for optimal posting times, add support for batch processing and queue management for multiple posts.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7
+        ],
+        "testStrategy": "Test automated scheduling, verify daily generation works correctly, and ensure proper queue management."
+      },
+      {
+        "id": 11,
+        "title": "Testing and Quality Assurance",
+        "description": "Comprehensive testing of all components and integration",
+        "details": "Perform unit testing for all services, integration testing for API interactions, end-to-end testing for complete workflow, and performance testing for scalability. Include user acceptance testing.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          8,
+          9
+        ],
+        "testStrategy": "Execute all test suites, verify integration points, and ensure system reliability and performance."
+      },
+      {
+        "id": 12,
+        "title": "Deployment and Documentation",
+        "description": "Deploy the system and create comprehensive documentation",
+        "details": "Prepare production deployment, create user documentation, API documentation, and maintenance guides. Include monitoring setup and backup procedures for production environment.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          11
+        ],
+        "testStrategy": "Verify production deployment, test monitoring and backup procedures, and validate documentation accuracy."
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-13T11:24:32.938Z",
+      "updated": "2025-08-13T11:24:32.938Z",
+      "description": "Instagram Reels automation feature for generating and posting educational English content"
+    }
+  }
+}
