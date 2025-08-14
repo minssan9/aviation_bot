@@ -71,8 +71,8 @@ class AviationBot {
         this.scheduler
       );
 
-      // Initialize Admin Server with database and config for Reels
-      this.adminServer = new AdminServer(database, this.config);
+      // Initialize Admin Server with database
+      this.adminServer = new AdminServer(database);
       
       console.log('✅ 모든 모듈이 성공적으로 초기화되었습니다');
       

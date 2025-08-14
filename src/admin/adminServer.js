@@ -4,21 +4,15 @@ const fs = require('fs').promises;
 const multer = require('multer');
 const TopicService = require('../services/topicService');
 const SimpleWeatherService = require('../services/simpleWeatherService');
-const ReelsController = require('./reelsController');
 
 class AdminServer {
-  constructor(database, config = null) {
+  constructor(database) {
     this.app = express();
     this.port = 3000;
     this.database = database;
     this.topicService = new TopicService(database);
     this.weatherImageService = new SimpleWeatherService();
     this.backupDir = path.join(__dirname, '../data/backups');
-    
-    // Initialize Reels Controller if config provided
-    if (config) {
-      this.reelsController = new ReelsController(config);
-    }
     
     this.setupMiddleware();
     this.setupRoutes();
@@ -551,37 +545,6 @@ class AdminServer {
         });
       }
     });
-
-    // === Instagram Reels Automation API ===
-    if (this.reelsController) {
-      // Reels status and monitoring
-      this.app.get('/api/reels/status', this.reelsController.getStatus.bind(this.reelsController));
-      this.app.get('/api/reels/logs', this.reelsController.getLogs.bind(this.reelsController));
-      this.app.get('/api/reels/validate', this.reelsController.validateSetup.bind(this.reelsController));
-      
-      // Content generation and posting
-      this.app.post('/api/reels/generate', this.reelsController.generateDaily.bind(this.reelsController));
-      this.app.post('/api/reels/generate-custom', this.reelsController.generateCustom.bind(this.reelsController));
-      this.app.post('/api/reels/test-content', this.reelsController.testContentGeneration.bind(this.reelsController));
-      
-      // Scheduling
-      this.app.post('/api/reels/schedule', this.reelsController.scheduleDaily.bind(this.reelsController));
-    } else {
-      // Provide placeholder endpoints when config not available
-      this.app.get('/api/reels/*', (req, res) => {
-        res.status(503).json({
-          success: false,
-          error: 'Instagram Reels service not configured'
-        });
-      });
-      
-      this.app.post('/api/reels/*', (req, res) => {
-        res.status(503).json({
-          success: false,
-          error: 'Instagram Reels service not configured'
-        });
-      });
-    }
   }
 
   // Static fallback data (replaces aviationKnowledge.js file)
