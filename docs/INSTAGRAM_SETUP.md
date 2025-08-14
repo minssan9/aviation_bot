@@ -87,7 +87,7 @@ Instagram Graph API를 통해 Reels를 자동으로 게시하기 위해서는 �
 ### 4.3 장기 토큰 생성
 ```bash
 # 단기 토큰을 장기 토큰으로 교환
-curl -X GET "https://graph.facebook.com/v18.0/oauth/access_token" \
+curl -X GET "https://graph.facebook.com/v21.0/oauth/access_token" \
   -d "grant_type=fb_exchange_token" \
   -d "client_id=YOUR_APP_ID" \
   -d "client_secret=YOUR_APP_SECRET" \
@@ -107,7 +107,7 @@ curl -X GET "https://graph.facebook.com/v18.0/oauth/access_token" \
 
 ### 5.1 연결된 페이지 조회
 ```bash
-curl -X GET "https://graph.facebook.com/v18.0/me/accounts" \
+curl -X GET "https://graph.facebook.com/v21.0/me/accounts" \
   -d "access_token=YOUR_LONG_LIVED_TOKEN"
 ```
 
@@ -129,7 +129,7 @@ curl -X GET "https://graph.facebook.com/v18.0/me/accounts" \
 
 ### 5.2 Instagram Business Account ID 확인
 ```bash
-curl -X GET "https://graph.facebook.com/v18.0/YOUR_PAGE_ID" \
+curl -X GET "https://graph.facebook.com/v21.0/YOUR_PAGE_ID" \
   -d "fields=instagram_business_account" \
   -d "access_token=YOUR_LONG_LIVED_TOKEN"
 ```
@@ -220,7 +220,7 @@ curl -X GET "http://localhost:3000/api/reels/validate"
 
 ```bash
 # 시스템 사용자 토큰 생성 예시
-curl -X POST "https://graph.facebook.com/v18.0/YOUR_BUSINESS_ID/system_users" \
+curl -X POST "https://graph.facebook.com/v21.0/YOUR_BUSINESS_ID/system_users" \
   -d "name=ReelsBot" \
   -d "role=ADMIN" \
   -d "access_token=YOUR_BUSINESS_TOKEN"
@@ -231,19 +231,19 @@ curl -X POST "https://graph.facebook.com/v18.0/YOUR_BUSINESS_ID/system_users" \
 ### 기본 연결 테스트
 ```bash
 # 1. 기본 계정 정보 확인
-curl -X GET "https://graph.facebook.com/v18.0/me?access_token=YOUR_TOKEN"
+curl -X GET "https://graph.facebook.com/v21.0/me?access_token=YOUR_TOKEN"
 
 # 2. 페이지 정보 확인  
-curl -X GET "https://graph.facebook.com/v18.0/YOUR_PAGE_ID?access_token=YOUR_TOKEN"
+curl -X GET "https://graph.facebook.com/v21.0/YOUR_PAGE_ID?access_token=YOUR_TOKEN"
 
 # 3. Instagram 계정 확인
-curl -X GET "https://graph.facebook.com/v18.0/YOUR_PAGE_ID/instagram_business_account?access_token=YOUR_TOKEN"
+curl -X GET "https://graph.facebook.com/v21.0/YOUR_PAGE_ID/instagram_business_account?access_token=YOUR_TOKEN"
 ```
 
 ### 미디어 업로드 테스트
 ```bash
 # 이미지 컨테이너 생성 테스트
-curl -X POST "https://graph.facebook.com/v18.0/YOUR_PAGE_ID/media" \
+curl -X POST "https://graph.facebook.com/v21.0/YOUR_PAGE_ID/media" \
   -F "image_url=https://example.com/test.jpg" \
   -F "caption=Test post" \
   -F "access_token=YOUR_TOKEN"
@@ -291,5 +291,5 @@ curl -X POST "https://graph.facebook.com/v18.0/YOUR_PAGE_ID/media" \
 - 콘텐츠 정책 및 커뮤니티 가이드라인 준수 필수
 - 개발 환경에서는 앱 소유자 및 테스터만 API 사용 가능
 
-**업데이트**: 2025-08-13  
-**API 버전**: Graph API v18.0
+**업데이트**: 2025-01-27  
+**API 버전**: Graph API v21.0
