@@ -1,12 +1,12 @@
 const TelegramBot = require('node-telegram-bot-api');
-const config = require('./config');
-const AIProviderManager = require('./providers/aiProvider');
-const UserService = require('./services/userService');
-const TopicService = require('./services/topicService');
-const { AviationKnowledgeService, AviationKnowledgeManager } = require('./services/aviationKnowledgeService');
-const MessageGenerator = require('./features/messageGenerator');
-const CommandHandlers = require('./features/commandHandlers');
-const Scheduler = require('./features/scheduler');
+const config = require('./shared/config');
+const AIProviderManager = require('./features/message-generation/aiProviders/aiProvider');
+const UserService = require('./features/user-management/userService');
+const TopicService = require('./features/aviation-knowledge/topicService');
+const { AviationKnowledgeService, AviationKnowledgeManager } = require('./features/aviation-knowledge/aviationKnowledgeService');
+const MessageGenerator = require('./features/message-generation/messageGenerator');
+const CommandHandlers = require('./features/bot-interface/commandHandlers');
+const Scheduler = require('./features/scheduling/scheduler');
 const AdminServer = require('./admin/adminServer');
 
 class AviationBot {

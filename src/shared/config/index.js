@@ -13,8 +13,8 @@ class Config {
     this.DB_HOST = process.env.DB_HOST || 'localhost';
     this.DB_PORT = parseInt(process.env.DB_PORT) || 3306;
     this.DB_USER = process.env.DB_USER || 'root';
-    this.DB_PASSWORD = process.env.DB_PASSWORD || '';
-    this.DB_NAME = process.env.DB_NAME || 'aviation_bot';
+    this.DB_PASSWORD = process.env.DB_PASSWORD || 'admin';
+    this.DB_NAME = process.env.DB_NAME || 'voyagerss';
     
     // Database Options - MySQL2 compatible
     this.DB_CONNECTION_LIMIT = parseInt(process.env.DB_CONNECTION_LIMIT) || 10;

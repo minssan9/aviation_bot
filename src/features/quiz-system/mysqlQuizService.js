@@ -1,4 +1,4 @@
-const MySQLDatabase = require('../database/mysqlDatabase');
+const MySQLDatabase = require('../../shared/database/mysqlDatabase');
 
 class MySQLQuizService {
   constructor(config) {

@@ -1,6 +1,6 @@
 const GeminiProvider = require('./gemini');
 const AnthropicProvider = require('./anthropic');
-const MySQLQuizService = require('../services/mysqlQuizService');
+const MySQLQuizService = require('../../quiz-system/mysqlQuizService');
 
 class AIProviderManager {
   constructor(config) {

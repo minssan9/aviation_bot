@@ -1,4 +1,4 @@
-const Database = require('../database/database');
+const Database = require('../../shared/database/database');
 
 class QuizService {
   constructor() {

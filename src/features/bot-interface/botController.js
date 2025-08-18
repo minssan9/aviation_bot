@@ -2,9 +2,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const cron = require('node-cron');
 const moment = require('moment-timezone');
 const Anthropic = require('@anthropic-ai/sdk');
-const MySQLDatabase = require('../database/mysqlDatabase');
-const TopicService = require('../services/topicService');
-const { AviationKnowledgeService, AviationKnowledgeManager } = require('../services/aviationKnowledgeService');
+const MySQLDatabase = require('../../shared/database/mysqlDatabase');
+const TopicService = require('../aviation-knowledge/topicService');
+const { AviationKnowledgeService, AviationKnowledgeManager } = require('../aviation-knowledge/aviationKnowledgeService');
 require('dotenv').config();
 
 // 봇 토큰 & Claude API Key (환경 변수에서 가져오기)

@@ -1,5 +1,5 @@
 const moment = require('moment-timezone');
-const { AviationKnowledgeManager } = require('../services/aviationKnowledgeService');
+const { AviationKnowledgeManager } = require('../aviation-knowledge/aviationKnowledgeService');
 
 class CommandHandlers {
   constructor(bot, userService, messageGenerator, aiProvider = null, scheduler = null) {

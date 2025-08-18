@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const SimpleWeatherService = require('../services/simpleWeatherService');
+const SimpleWeatherService = require('../weather/simpleWeatherService');
 
 class Scheduler {
   constructor(bot, subscriberManager, messageGenerator) {
