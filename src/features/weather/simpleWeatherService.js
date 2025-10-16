@@ -1,7 +1,7 @@
 const axios = require('axios');
 const fs = require('fs').promises;
 const path = require('path');
-const config = require('../../shared/config');
+const config = require('../../config/environment');
 
 /**
  * 단순화된 기상청 KO 위성사진 수집 서비스

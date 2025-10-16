@@ -1,11 +1,11 @@
 const TelegramBot = require('node-telegram-bot-api');
-const config = require('./shared/config');
-const AIProviderManager = require('./features/message-generation/aiProviders/aiProvider');
+const config = require('./config/environment');
+const AIProviderManager = require('./features/aviation-quiz-system/message-generation/aiProviders/aiProvider');
 const UserService = require('./features/user-management/userService');
-const TopicService = require('./features/aviation-knowledge/topicService');
-const { AviationKnowledgeService, AviationKnowledgeManager } = require('./features/aviation-knowledge/aviationKnowledgeService');
-const MessageGenerator = require('./features/message-generation/messageGenerator');
-const CommandHandlers = require('./features/bot-interface/commandHandlers');
+const TopicService = require('./features/aviation-quiz-system/aviation-knowledge/topicService');
+const { AviationKnowledgeService, AviationKnowledgeManager } = require('./features/aviation-quiz-system/aviation-knowledge/aviationKnowledgeService');
+const MessageGenerator = require('./features/aviation-quiz-system/message-generation/messageGenerator');
+const CommandHandlers = require('./features/bot-telegram-if/commandHandlers');
 const Scheduler = require('./features/scheduling/scheduler');
 const AdminServer = require('./admin/adminServer');
 

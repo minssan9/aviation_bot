@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
 const multer = require('multer');
-const TopicService = require('../features/aviation-knowledge/topicService');
+const TopicService = require('../features/aviation-quiz-system/aviation-knowledge/topicService');
 const SimpleWeatherService = require('../features/weather/simpleWeatherService');
 
 class AdminServer {
