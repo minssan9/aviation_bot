@@ -106,7 +106,7 @@ class AdminServer {
         
         for (const topic of topics) {
           const subjects = await this.topicService.getSubjectsByTopic(topic.id);
-          knowledgeData[topic.day_of_week] = {
+          knowledgeData[topic.day_of_month] = {
             topic: topic.name,
             subjects: subjects.map(s => s.title)
           };
@@ -138,7 +138,7 @@ class AdminServer {
         }
 
         // DB에서 해당 요일의 토픽 찾기
-        const existingTopic = await this.topicService.getTopicByDayOfWeek(day);
+        const existingTopic = await this.topicService.getTopicByDayOfMonth(day);
         
         if (!existingTopic) {
           return res.status(404).json({ error: '해당 요일의 토픽을 찾을 수 없습니다' });
@@ -184,7 +184,7 @@ class AdminServer {
         
         for (const topic of topics) {
           const subjects = await this.topicService.getSubjectsByTopic(topic.id);
-          backupData[topic.day_of_week] = {
+          backupData[topic.day_of_month] = {
             topic: topic.name,
             subjects: subjects.map(s => s.title)
           };
@@ -588,7 +588,7 @@ class AdminServer {
           
           // 해당 요일의 토픽 찾기
           const [topicRows] = await connection.execute(
-            'SELECT id FROM topics WHERE day_of_week = ? AND is_active = 1',
+            'SELECT id FROM topics WHERE day_of_month = ? AND is_active = 1',
             [day]
           );
           
@@ -652,7 +652,7 @@ class AdminServer {
       
       // Check for all weekdays
       for (let day = 0; day < 7; day++) {
-        const topic = await this.topicService.getTopicByDayOfWeek(day);
+        const topic = await this.topicService.getTopicByDayOfMonth(day);
         if (!topic) {
           errors.push(`${day}요일 토픽이 없습니다`);
         }

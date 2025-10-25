@@ -46,23 +46,23 @@ class TopicService {
   }
 
   /**
-   * Get topic by day of week
-   * @param {number} dayOfWeek - Day of week (0-6)
+   * Get topic by day of month
+   * @param {number} dayOfMonth - Day of month (1-31)
    * @returns {Promise<TopicDTO>} Topic DTO
    */
-  async getTopicByDayOfWeek(dayOfWeek) {
-    if (dayOfWeek < 0 || dayOfWeek > 6) {
-      throw new Error('Day of week must be between 0 and 6');
+  async getTopicByDayOfMonth(dayOfMonth) {
+    if (dayOfMonth < 1 || dayOfMonth > 31) {
+      throw new Error('Day of month must be between 1 and 31');
     }
 
     try {
-      const topic = await this.topicRepository.findByDayOfWeek(dayOfWeek);
+      const topic = await this.topicRepository.findByDayOfMonth(dayOfMonth);
       if (!topic) {
-        throw new Error(`No topic found for day ${dayOfWeek}`);
+        throw new Error(`No topic found for day ${dayOfMonth}`);
       }
       return TopicDTO.fromDatabase(topic);
     } catch (error) {
-      console.error(`Error getting topic for day ${dayOfWeek}:`, error);
+      console.error(`Error getting topic for day ${dayOfMonth}:`, error);
       throw error;
     }
   }
@@ -145,7 +145,7 @@ class TopicService {
       return schedule.map(s => ({
         id: s.id,
         day: s.day_name,
-        dayOfWeek: s.day_of_week,
+        dayOfMonth: s.day_of_month,
         topic: s.topic,
         subjectCount: s.subject_count
       }));
@@ -185,6 +185,87 @@ class TopicService {
     } catch (error) {
       console.error('Error getting topic statistics:', error);
       throw new Error('Failed to retrieve topic statistics');
+    }
+  }
+
+  /**
+   * Get topic by date (new date-based system)
+   * @param {number} dayOfMonth - Day of month (1-31)
+   * @param {number} month - Month (1-12)
+   * @param {number} year - Year
+   * @returns {Promise<TopicDTO>} Topic DTO
+   */
+  async getTopicByDate(dayOfMonth, month, year) {
+    try {
+      const topic = await this.topicRepository.findByDate(dayOfMonth, month, year);
+      if (!topic) {
+        throw new Error(`No topic found for date ${dayOfMonth}/${month}/${year}`);
+      }
+      return TopicDTO.fromDatabase(topic);
+    } catch (error) {
+      console.error(`Error getting topic for date ${dayOfMonth}/${month}/${year}:`, error);
+      throw new Error('Failed to retrieve topic for date');
+    }
+  }
+
+  /**
+   * Get topic by day of month (simplified date-based system)
+   * @param {number} dayOfMonth - Day of month (1-31)
+   * @returns {Promise<TopicDTO>} Topic DTO
+   */
+  async getTopicByDayOfMonth(dayOfMonth) {
+    if (dayOfMonth < 1 || dayOfMonth > 31) {
+      throw new Error('Day of month must be between 1 and 31');
+    }
+
+    try {
+      const topic = await this.topicRepository.findByDayOfMonth(dayOfMonth);
+      if (!topic) {
+        throw new Error(`No topic found for day ${dayOfMonth}`);
+      }
+      return TopicDTO.fromDatabase(topic);
+    } catch (error) {
+      console.error(`Error getting topic for day ${dayOfMonth}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all topics by category
+   * @param {string} category - Topic category
+   * @returns {Promise<Array<TopicDTO>>} Array of topic DTOs
+   */
+  async getTopicsByCategory(category) {
+    if (!category || typeof category !== 'string') {
+      throw new Error('Category is required and must be a string');
+    }
+
+    try {
+      const topics = await this.topicRepository.findByCategory(category);
+      return topics.map(topic => TopicDTO.fromDatabase(topic));
+    } catch (error) {
+      console.error(`Error getting topics by category ${category}:`, error);
+      throw new Error('Failed to retrieve topics by category');
+    }
+  }
+
+  /**
+   * Get topics by difficulty level
+   * @param {string} difficultyLevel - Difficulty level
+   * @returns {Promise<Array<TopicDTO>>} Array of topic DTOs
+   */
+  async getTopicsByDifficulty(difficultyLevel) {
+    const validLevels = ['beginner', 'intermediate', 'advanced', 'expert'];
+    if (!validLevels.includes(difficultyLevel)) {
+      throw new Error(`Invalid difficulty level. Must be one of: ${validLevels.join(', ')}`);
+    }
+
+    try {
+      const topics = await this.topicRepository.findByDifficulty(difficultyLevel);
+      return topics.map(topic => TopicDTO.fromDatabase(topic));
+    } catch (error) {
+      console.error(`Error getting topics by difficulty ${difficultyLevel}:`, error);
+      throw new Error('Failed to retrieve topics by difficulty');
     }
   }
 }

@@ -12,35 +12,35 @@ class AviationKnowledgeService {
   }
 
   /**
-   * Get knowledge by day of week
-   * @param {number} dayOfWeek - Day of week (0-6)
+   * Get knowledge by day of month
+   * @param {number} dayOfMonth - Day of month (1-31)
    * @returns {Promise<Object>} Knowledge data with topic and subjects
    */
-  async getKnowledgeByDay(dayOfWeek) {
+  async getKnowledgeByDay(dayOfMonth) {
     try {
-      const topic = await this.topicService.getTopicByDayOfWeek(dayOfWeek);
+      const topic = await this.topicService.getTopicByDayOfMonth(dayOfMonth);
       const subjects = await this.subjectService.getSubjectsByTopicId(topic.id);
       
-      return this._formatKnowledgeResponse(topic, subjects, { dayOfWeek });
+      return this._formatKnowledgeResponse(topic, subjects, { dayOfMonth });
     } catch (error) {
-      console.error(`Error getting knowledge for day ${dayOfWeek}:`, error);
+      console.error(`Error getting knowledge for day ${dayOfMonth}:`, error);
       throw error;
     }
   }
 
   /**
    * Get random subject for specific day
-   * @param {number} dayOfWeek - Day of week (0-6)
+   * @param {number} dayOfMonth - Day of month (1-31)
    * @returns {Promise<Object>} Random subject data
    */
-  async getRandomSubjectByDay(dayOfWeek) {
+  async getRandomSubjectByDay(dayOfMonth) {
     try {
-      const topic = await this.topicService.getTopicByDayOfWeek(dayOfWeek);
+      const topic = await this.topicService.getTopicByDayOfMonth(dayOfMonth);
       const randomSubject = await this.subjectService.getRandomSubjectByTopicId(topic.id);
       
-      return this._formatSubjectResponse(randomSubject, topic, { dayOfWeek });
+      return this._formatSubjectResponse(randomSubject, topic, { dayOfMonth });
     } catch (error) {
-      console.error(`Error getting random subject for day ${dayOfWeek}:`, error);
+      console.error(`Error getting random subject for day ${dayOfMonth}:`, error);
       throw error;
     }
   }

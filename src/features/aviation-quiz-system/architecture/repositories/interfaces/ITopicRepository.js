@@ -21,11 +21,11 @@ class ITopicRepository {
   }
 
   /**
-   * Get topic by day of week
-   * @param {number} dayOfWeek - Day of week (0-6)
+   * Get topic by day of month
+   * @param {number} dayOfMonth - Day of month (1-31)
    * @returns {Promise<Object|null>} Topic record or null
    */
-  async findByDayOfWeek(dayOfWeek) {
+  async findByDayOfMonth(dayOfMonth) {
     throw new Error('Method must be implemented');
   }
 

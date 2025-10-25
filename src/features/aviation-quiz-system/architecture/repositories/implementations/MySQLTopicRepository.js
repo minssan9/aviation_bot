@@ -21,7 +21,7 @@ class MySQLTopicRepository extends ITopicRepository {
       LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.is_active = 1
       GROUP BY t.id
-      ORDER BY t.day_of_month ASC, t.day_of_week ASC
+      ORDER BY t.day_of_month ASC
     `;
     return await this.db.all(sql);
   }
@@ -43,20 +43,20 @@ class MySQLTopicRepository extends ITopicRepository {
   }
 
   /**
-   * Get topic by day of week
-   * @param {number} dayOfWeek - Day of week (0-6)
+   * Get topic by day of month
+   * @param {number} dayOfMonth - Day of month (1-31)
    * @returns {Promise<Object|null>} Topic record or null
    */
-  async findByDayOfWeek(dayOfWeek) {
+  async findByDayOfMonth(dayOfMonth) {
     const sql = `
       SELECT t.*, COUNT(s.id) as subject_count
       FROM topics t
       LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
-      WHERE t.day_of_week = ? AND t.is_active = 1
+      WHERE t.day_of_month = ? AND t.is_active = 1
       GROUP BY t.id
       LIMIT 1
     `;
-    return await this.db.get(sql, [dayOfWeek]);
+    return await this.db.get(sql, [dayOfMonth]);
   }
 
   /**
@@ -66,13 +66,12 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async create(topicData) {
     const sql = `
-      INSERT INTO topics (name, description, day_of_week, day_of_month, topic_category, difficulty_level, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO topics (name, description, day_of_month, topic_category, difficulty_level, is_active)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
     const result = await this.db.execute(sql, [
       topicData.name,
       topicData.description,
-      topicData.dayOfWeek,
       topicData.dayOfMonth,
       topicData.topicCategory || 'General',
       topicData.difficultyLevel || 'intermediate',
@@ -98,10 +97,6 @@ class MySQLTopicRepository extends ITopicRepository {
     if (topicData.description !== undefined) {
       fields.push('description = ?');
       values.push(topicData.description);
-    }
-    if (topicData.dayOfWeek !== undefined) {
-      fields.push('day_of_week = ?');
-      values.push(topicData.dayOfWeek);
     }
     if (topicData.dayOfMonth !== undefined) {
       fields.push('day_of_month = ?');
@@ -153,22 +148,14 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async getWeeklySchedule() {
     const sql = `
-      SELECT t.id, t.name as topic, t.day_of_week, 
+      SELECT t.id, t.name as topic, t.day_of_month, 
              COUNT(s.id) as subject_count,
-             CASE t.day_of_week
-               WHEN 0 THEN '일요일'
-               WHEN 1 THEN '월요일'
-               WHEN 2 THEN '화요일'
-               WHEN 3 THEN '수요일'
-               WHEN 4 THEN '목요일'
-               WHEN 5 THEN '금요일'
-               WHEN 6 THEN '토요일'
-             END as day_name
+             CONCAT(t.day_of_month, '일') as day_name
       FROM topics t
       LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.is_active = 1
       GROUP BY t.id
-      ORDER BY t.day_of_week ASC
+      ORDER BY t.day_of_month ASC
     `;
     return await this.db.all(sql);
   }

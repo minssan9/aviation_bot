@@ -14,7 +14,7 @@ class SubjectDTO {
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
     this.topicName = data.topic_name;
-    this.dayOfWeek = data.day_of_week;
+    this.dayOfMonth = data.day_of_month;
   }
 
   /**
@@ -42,7 +42,7 @@ class SubjectDTO {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
       topicName: this.topicName,
-      dayOfWeek: this.dayOfWeek
+      dayOfMonth: this.dayOfMonth
     };
   }
 

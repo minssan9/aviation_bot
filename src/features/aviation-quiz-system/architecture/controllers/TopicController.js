@@ -65,23 +65,23 @@ class TopicController {
   }
 
   /**
-   * Get topic by day of week
+   * Get topic by day of month
    * @param {Object} req - Request object
    * @param {Object} res - Response object
    */
-  async getTopicByDayOfWeek(req, res) {
+  async getTopicByDayOfMonth(req, res) {
     try {
-      const { dayOfWeek } = req.params;
-      const day = parseInt(dayOfWeek);
+      const { dayOfMonth } = req.params;
+      const day = parseInt(dayOfMonth);
       
-      if (day < 0 || day > 6) {
+      if (day < 1 || day > 31) {
         return res.status(400).json({
           success: false,
-          message: 'Day of week must be between 0 and 6'
+          message: 'Day of month must be between 1 and 31'
         });
       }
       
-      const topic = await this.topicService.getTopicByDayOfWeek(day);
+      const topic = await this.topicService.getTopicByDayOfMonth(day);
       
       res.json({
         success: true,
@@ -89,7 +89,7 @@ class TopicController {
         data: topic.toJSON()
       });
     } catch (error) {
-      console.error('Error in getTopicByDayOfWeek:', error);
+      console.error('Error in getTopicByDayOfMonth:', error);
       
       if (error.message.includes('No topic found')) {
         res.status(404).json({

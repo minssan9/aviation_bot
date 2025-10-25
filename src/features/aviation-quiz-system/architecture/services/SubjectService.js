@@ -52,17 +52,10 @@ class SubjectService {
    * @returns {Promise<Array<SubjectDTO>>} Array of subject DTOs
    */
   async getSubjectsByTopicId(topicId) {
-    if (!topicId || !Number.isInteger(topicId) || topicId <= 0) {
-      throw new Error('Invalid topic ID');
-    }
-
+    this._validateTopicId(topicId);
+    
     try {
-      // Verify topic exists
-      const topic = await this.topicRepository.findById(topicId);
-      if (!topic) {
-        throw new Error('Topic not found');
-      }
-
+      await this._verifyTopicExists(topicId);
       const subjects = await this.subjectRepository.findByTopicId(topicId);
       return subjects.map(subject => SubjectDTO.fromDatabase(subject));
     } catch (error) {
@@ -97,10 +90,8 @@ class SubjectService {
    * @returns {Promise<SubjectDTO>} Random subject DTO
    */
   async getRandomSubjectByTopicId(topicId) {
-    if (!topicId || !Number.isInteger(topicId) || topicId <= 0) {
-      throw new Error('Invalid topic ID');
-    }
-
+    this._validateTopicId(topicId);
+    
     try {
       const subject = await this.subjectRepository.findRandomByTopicId(topicId);
       if (!subject) {
@@ -136,16 +127,10 @@ class SubjectService {
    * @returns {Promise<SubjectDTO>} Created subject DTO
    */
   async createSubject(subjectData) {
-    // Validate input data
-    const validation = SubjectDTO.validate(subjectData);
-    if (!validation.isValid) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
-    }
-
-    // Verify topic exists
-    const topic = await this.topicRepository.findById(subjectData.topicId);
-    if (!topic) {
-      throw new Error('Topic not found');
+    this._validateSubjectData(subjectData);
+    
+    if (subjectData.topicId) {
+      await this._verifyTopicExists(subjectData.topicId);
     }
 
     try {
@@ -164,22 +149,11 @@ class SubjectService {
    * @returns {Promise<SubjectDTO>} Updated subject DTO
    */
   async updateSubject(id, subjectData) {
-    if (!id || !Number.isInteger(id) || id <= 0) {
-      throw new Error('Invalid subject ID');
-    }
-
-    // Validate input data
-    const validation = SubjectDTO.validate(subjectData);
-    if (!validation.isValid) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
-    }
-
-    // If topicId is being updated, verify topic exists
+    this._validateSubjectId(id);
+    this._validateSubjectData(subjectData);
+    
     if (subjectData.topicId) {
-      const topic = await this.topicRepository.findById(subjectData.topicId);
-      if (!topic) {
-        throw new Error('Topic not found');
-      }
+      await this._verifyTopicExists(subjectData.topicId);
     }
 
     try {
@@ -200,10 +174,8 @@ class SubjectService {
    * @returns {Promise<boolean>} Success status
    */
   async deleteSubject(id) {
-    if (!id || !Number.isInteger(id) || id <= 0) {
-      throw new Error('Invalid subject ID');
-    }
-
+    this._validateSubjectId(id);
+    
     try {
       return await this.subjectRepository.delete(id);
     } catch (error) {
@@ -219,23 +191,8 @@ class SubjectService {
    * @returns {Promise<boolean>} Success status
    */
   async updateSubjectOrder(topicId, subjectOrders) {
-    if (!topicId || !Number.isInteger(topicId) || topicId <= 0) {
-      throw new Error('Invalid topic ID');
-    }
-
-    if (!Array.isArray(subjectOrders) || subjectOrders.length === 0) {
-      throw new Error('Subject orders array is required');
-    }
-
-    // Validate each subject order entry
-    for (const order of subjectOrders) {
-      if (!order.id || !Number.isInteger(order.id) || order.id <= 0) {
-        throw new Error('Invalid subject ID in order array');
-      }
-      if (order.sortOrder === undefined || !Number.isInteger(order.sortOrder) || order.sortOrder < 0) {
-        throw new Error('Invalid sort order in order array');
-      }
-    }
+    this._validateTopicId(topicId);
+    this._validateSubjectOrders(subjectOrders);
 
     try {
       return await this.subjectRepository.updateOrder(topicId, subjectOrders);
@@ -275,6 +232,72 @@ class SubjectService {
     } catch (error) {
       console.error('Error getting subject statistics:', error);
       throw new Error('Failed to retrieve subject statistics');
+    }
+  }
+
+  /**
+   * Validate subject ID
+   * @private
+   * @param {number} id - Subject ID
+   */
+  _validateSubjectId(id) {
+    if (!id || !Number.isInteger(id) || id <= 0) {
+      throw new Error('Invalid subject ID');
+    }
+  }
+
+  /**
+   * Validate topic ID
+   * @private
+   * @param {number} topicId - Topic ID
+   */
+  _validateTopicId(topicId) {
+    if (!topicId || !Number.isInteger(topicId) || topicId <= 0) {
+      throw new Error('Invalid topic ID');
+    }
+  }
+
+  /**
+   * Validate subject data
+   * @private
+   * @param {Object} subjectData - Subject data
+   */
+  _validateSubjectData(subjectData) {
+    const validation = SubjectDTO.validate(subjectData);
+    if (!validation.isValid) {
+      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+    }
+  }
+
+  /**
+   * Validate subject orders array
+   * @private
+   * @param {Array} subjectOrders - Subject orders array
+   */
+  _validateSubjectOrders(subjectOrders) {
+    if (!Array.isArray(subjectOrders) || subjectOrders.length === 0) {
+      throw new Error('Subject orders array is required');
+    }
+
+    for (const order of subjectOrders) {
+      if (!order.id || !Number.isInteger(order.id) || order.id <= 0) {
+        throw new Error('Invalid subject ID in order array');
+      }
+      if (order.sortOrder === undefined || !Number.isInteger(order.sortOrder) || order.sortOrder < 0) {
+        throw new Error('Invalid sort order in order array');
+      }
+    }
+  }
+
+  /**
+   * Verify topic exists
+   * @private
+   * @param {number} topicId - Topic ID
+   */
+  async _verifyTopicExists(topicId) {
+    const topic = await this.topicRepository.findById(topicId);
+    if (!topic) {
+      throw new Error('Topic not found');
     }
   }
 }

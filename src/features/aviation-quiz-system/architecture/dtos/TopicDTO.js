@@ -7,7 +7,7 @@ class TopicDTO {
     this.id = data.id;
     this.name = data.name;
     this.description = data.description;
-    this.dayOfWeek = data.day_of_week;
+    this.dayOfMonth = data.day_of_month;
     this.isActive = data.is_active;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
@@ -32,7 +32,7 @@ class TopicDTO {
       id: this.id,
       name: this.name,
       description: this.description,
-      dayOfWeek: this.dayOfWeek,
+      dayOfMonth: this.dayOfMonth,
       isActive: this.isActive,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
@@ -60,8 +60,8 @@ class TopicDTO {
       errors.push('Topic description must be less than 500 characters');
     }
 
-    if (data.dayOfWeek !== undefined && (data.dayOfWeek < 0 || data.dayOfWeek > 6)) {
-      errors.push('Day of week must be between 0 and 6');
+    if (data.dayOfMonth !== undefined && (data.dayOfMonth < 1 || data.dayOfMonth > 31)) {
+      errors.push('Day of month must be between 1 and 31');
     }
 
     return {

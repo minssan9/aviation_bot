@@ -16,11 +16,11 @@ class MySQLSubjectRepository extends ISubjectRepository {
    */
   async findAll() {
     const sql = `
-      SELECT s.*, t.name as topic_name, t.day_of_week
+      SELECT s.*, t.name as topic_name, t.day_of_month
       FROM subjects s
       JOIN topics t ON s.topic_id = t.id
       WHERE s.is_active = 1 AND t.is_active = 1
-      ORDER BY t.day_of_week ASC, s.sort_order ASC, s.id ASC
+      ORDER BY t.day_of_month ASC, s.sort_order ASC, s.id ASC
     `;
     return await this.db.all(sql);
   }
@@ -32,7 +32,7 @@ class MySQLSubjectRepository extends ISubjectRepository {
    */
   async findById(id) {
     const sql = `
-      SELECT s.*, t.name as topic_name, t.day_of_week
+      SELECT s.*, t.name as topic_name, t.day_of_month
       FROM subjects s
       JOIN topics t ON s.topic_id = t.id
       WHERE s.id = ? AND s.is_active = 1 AND t.is_active = 1
@@ -47,7 +47,7 @@ class MySQLSubjectRepository extends ISubjectRepository {
    */
   async findByTopicId(topicId) {
     const sql = `
-      SELECT s.*, t.name as topic_name, t.day_of_week
+      SELECT s.*, t.name as topic_name, t.day_of_month
       FROM subjects s
       JOIN topics t ON s.topic_id = t.id
       WHERE s.topic_id = ? AND s.is_active = 1 AND t.is_active = 1
@@ -63,11 +63,11 @@ class MySQLSubjectRepository extends ISubjectRepository {
    */
   async findByDifficulty(difficultyLevel) {
     const sql = `
-      SELECT s.*, t.name as topic_name, t.day_of_week
+      SELECT s.*, t.name as topic_name, t.day_of_month
       FROM subjects s
       JOIN topics t ON s.topic_id = t.id
       WHERE s.difficulty_level = ? AND s.is_active = 1 AND t.is_active = 1
-      ORDER BY t.day_of_week ASC, s.sort_order ASC
+      ORDER BY t.day_of_month ASC, s.sort_order ASC
     `;
     return await this.db.all(sql, [difficultyLevel]);
   }
@@ -79,7 +79,7 @@ class MySQLSubjectRepository extends ISubjectRepository {
    */
   async findRandomByTopicId(topicId) {
     const sql = `
-      SELECT s.*, t.name as topic_name, t.day_of_week
+      SELECT s.*, t.name as topic_name, t.day_of_month
       FROM subjects s
       JOIN topics t ON s.topic_id = t.id
       WHERE s.topic_id = ? AND s.is_active = 1 AND t.is_active = 1
@@ -95,7 +95,7 @@ class MySQLSubjectRepository extends ISubjectRepository {
    */
   async findRandom() {
     const sql = `
-      SELECT s.*, t.name as topic_name, t.day_of_week
+      SELECT s.*, t.name as topic_name, t.day_of_month
       FROM subjects s
       JOIN topics t ON s.topic_id = t.id
       WHERE s.is_active = 1 AND t.is_active = 1
@@ -223,7 +223,7 @@ class MySQLSubjectRepository extends ISubjectRepository {
     const { topicId, difficultyLevel, limit = 20, offset = 0 } = options;
     
     let sql = `
-      SELECT s.*, t.name as topic_name, t.day_of_week
+      SELECT s.*, t.name as topic_name, t.day_of_month
       FROM subjects s
       JOIN topics t ON s.topic_id = t.id
       WHERE s.is_active = 1 AND t.is_active = 1
