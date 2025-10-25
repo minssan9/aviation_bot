@@ -1,12 +1,9 @@
 const TelegramBot = require('node-telegram-bot-api');
 const config = require('./config/environment');
 const AIProviderManager = require('./features/aviation-quiz-system/message-generation/aiProviders/aiProvider');
-const UserService = require('./features/user-management/userService');
-const TopicService = require('./features/aviation-quiz-system/aviation-knowledge/topicService');
-const { AviationKnowledgeService, AviationKnowledgeManager } = require('./features/aviation-quiz-system/aviation-knowledge/aviationKnowledgeService');
+const ApplicationFactory = require('./features/aviation-quiz-system/architecture/ApplicationFactory');
 const MessageGenerator = require('./features/aviation-quiz-system/message-generation/messageGenerator');
 const CommandHandlers = require('./features/bot-telegram-if/commandHandlers');
-const Scheduler = require('./features/scheduling/scheduler');
 const AdminServer = require('./admin/adminServer');
 
 class AviationBot {
@@ -14,12 +11,9 @@ class AviationBot {
     this.config = config.getConfig();
     this.bot = null;
     this.aiProvider = null;
-    this.userService = null;
-    this.topicService = null;
     this.aviationKnowledgeService = null;
     this.messageGenerator = null;
     this.commandHandlers = null;
-    this.scheduler = null;
     this.adminServer = null;
   }
 
@@ -30,8 +24,16 @@ class AviationBot {
       // Initialize Telegram Bot
       this.bot = new TelegramBot(this.config.BOT_TOKEN, { polling: true });
       
-      // Initialize AI Provider Manager
-      this.aiProvider = new AIProviderManager(this.config);
+      // Initialize new architecture
+      const applicationFactory = new ApplicationFactory();
+      const app = applicationFactory.createApp(null); // Database will be injected by the factory
+      this.aviationKnowledgeService = applicationFactory.getService('aviationKnowledgeService');
+      
+      // Get database from the application factory
+      const database = applicationFactory.getService('database');
+      
+      // Initialize AI Provider Manager with database
+      this.aiProvider = new AIProviderManager(this.config, database);
       
       // Check AI provider availability
       const providerStatus = await this.aiProvider.checkAvailability();
@@ -39,36 +41,23 @@ class AviationBot {
       
       // Initialize AI Provider database
       await this.aiProvider.initialize();
-
-      // Initialize User Service with MySQL
-      this.userService = new UserService(this.config);
-      await this.userService.initialize();
-      
-      // Get database instance from user service
-      const database = this.userService.getDatabase();
-      
-      // Initialize Topic and Aviation Knowledge services
-      this.topicService = new TopicService(database);
-      this.aviationKnowledgeService = new AviationKnowledgeService(database, this.topicService);
-      
-      // Set global instance for backward compatibility
-      AviationKnowledgeManager.setInstance(this.aviationKnowledgeService);
       
       console.log('✅ Database-driven aviation knowledge system initialized');
 
       // Initialize other components with aviation knowledge service
       this.messageGenerator = new MessageGenerator(this.aiProvider, this.aviationKnowledgeService);
-      this.scheduler = new Scheduler(
-        this.bot,
-        this.userService,
-        this.messageGenerator
-      );
+      
+      // Get services from the application factory
+      const userService = applicationFactory.getService('userManagementService');
+      const scheduler = applicationFactory.getService('schedulingService');
+      
       this.commandHandlers = new CommandHandlers(
         this.bot, 
-        this.userService, 
+        userService, 
         this.messageGenerator,
         this.aiProvider,
-        this.scheduler
+        scheduler,
+        this.aviationKnowledgeService
       );
 
       // Initialize Admin Server with database
@@ -85,9 +74,6 @@ class AviationBot {
   start() {
     console.log('🚀 봇 시작 중...');
     
-    // Start scheduler
-    this.scheduler.start();
-    
     // Start admin server
     this.adminServer.start();
     
@@ -103,20 +89,12 @@ class AviationBot {
   async stop() {
     console.log('⏹️ 봇 중지 중...');
     
-    if (this.scheduler) {
-      this.scheduler.stop();
-    }
-    
     if (this.adminServer) {
       this.adminServer.stop();
     }
 
     if (this.aiProvider) {
       await this.aiProvider.close();
-    }
-
-    if (this.userService) {
-      await this.userService.close();
     }
     
     if (this.bot) {

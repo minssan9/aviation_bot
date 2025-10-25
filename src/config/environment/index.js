@@ -50,7 +50,7 @@ class Config {
 
     // Log configuration
     const providers = [];
-    if (this.GEMINI_API_KEY) providers.push('Gemini');
+    if (this.GEMINI_API_KEY) providers.push('Google AI Studio (Gemini)');
     if (this.CLAUDE_API_KEY) providers.push('Anthropic');
     
     console.log(`🔑 AI Providers: ${providers.join(', ')}`);

@@ -1,5 +1,4 @@
 const moment = require('moment-timezone');
-const { AviationKnowledgeManager } = require('../aviation-knowledge/aviationKnowledgeService');
 
 class MessageGenerator {
   constructor(aiProvider, aviationKnowledgeService = null) {
@@ -116,7 +115,11 @@ class MessageGenerator {
   async _getKnowledgeByDay(dayOfWeek) {
     try {
       if (this.aviationKnowledgeService) {
-        return await AviationKnowledgeManager.getKnowledgeByDay(dayOfWeek);
+        const knowledge = await this.aviationKnowledgeService.getKnowledgeByDay(dayOfWeek);
+        return {
+          topic: knowledge.topic,
+          subjects: knowledge.subjects.map(s => s.title)
+        };
       }
     } catch (error) {
       console.error('DB query failed, using fallback:', error);
@@ -138,7 +141,8 @@ class MessageGenerator {
   async _getRandomSubject(dayOfWeek) {
     try {
       if (this.aviationKnowledgeService) {
-        return await AviationKnowledgeManager.getRandomSubject(dayOfWeek);
+        const subject = await this.aviationKnowledgeService.getRandomSubjectByDay(dayOfWeek);
+        return subject.title;
       }
     } catch (error) {
       console.error('DB query failed, using fallback:', error);

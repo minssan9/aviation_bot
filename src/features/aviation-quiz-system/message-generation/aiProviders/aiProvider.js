@@ -1,40 +1,40 @@
+const GoogleAIStudioProvider = require('./googleAIStudio');
 const GeminiProvider = require('./gemini');
-const AnthropicProvider = require('./anthropic');
-const MySQLQuizService = require('../../mysqlQuizService');
+const OllamaProvider = require('./ollama');
+const MySQLQuizRepository = require('../../architecture/repositories/implementations/MySQLQuizRepository');
 
 class AIProviderManager {
-  constructor(config) {
+  constructor(config, database) {
     this.providers = [];
-    this.quizService = new MySQLQuizService(config);
+    this.quizService = new MySQLQuizRepository(database);
     
-    // Primary: Gemini
+    // Primary: Google AI Studio (무료) - 표준 환경 변수명 사용
     if (config.GEMINI_API_KEY) {
       this.providers.push({
-        name: 'gemini',
-        instance: new GeminiProvider(config.GEMINI_API_KEY),
+        name: 'google-ai-studio',
+        instance: new GoogleAIStudioProvider(config.GEMINI_API_KEY),
         priority: 1
       });
     }
     
-    // Fallback: Anthropic
-    if (config.CLAUDE_API_KEY) {
-      this.providers.push({
-        name: 'anthropic',
-        instance: new AnthropicProvider(config.CLAUDE_API_KEY),
-        priority: 2
-      });
-    }
+    // Fallback: Ollama (Local)
+    this.providers.push({
+      name: 'ollama',
+      instance: new OllamaProvider(config.OLLAMA_BASE_URL || 'http://localhost:11434'),
+      priority: 3
+    });
     
     // Sort by priority
     this.providers.sort((a, b) => a.priority - b.priority);
     
     if (this.providers.length === 0) {
-      throw new Error('No AI providers available. Please configure GEMINI_API_KEY or CLAUDE_API_KEY.');
+      throw new Error('No AI providers available. Please configure GEMINI_API_KEY or ensure Ollama is running locally.');
     }
   }
 
   async initialize() {
-    await this.quizService.initialize();
+    // Quiz repository doesn't need initialization
+    // Database connection is handled by the database layer
   }
 
   async generateQuiz(topic, knowledgeArea) {
@@ -92,9 +92,8 @@ class AIProviderManager {
   }
 
   async close() {
-    if (this.quizService) {
-      await this.quizService.close();
-    }
+    // Quiz repository doesn't need explicit closing
+    // Database connection is managed by the database layer
   }
 }
 

@@ -15,7 +15,7 @@ Enterprise-grade Telegram bot delivering structured aviation knowledge with AI-p
 ```
 Runtime:     Node.js 18+ | TypeScript-ready
 Framework:   Express.js | Telegram Bot API
-AI:          Anthropic Claude-3.5 | Google Gemini Pro
+AI:          Google Gemini Pro | Ollama (Local Fallback)
 Database:    MySQL 8+ | SQLite 3
 Scheduling:  node-cron | moment-timezone (KST)
 DevOps:      Docker | docker-compose | nodemon
@@ -106,7 +106,7 @@ class Config {
   constructor() {
     this.BOT_TOKEN = process.env.BOT_TOKEN;           // Telegram bot token
     this.GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Google AI
-    this.CLAUDE_API_KEY = process.env.CLAUDE_API_KEY; // Anthropic AI
+    this.OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'; // Ollama Local
     // MySQL configuration
     this.DB_HOST = process.env.DB_HOST || 'localhost';
     this.DB_CONNECTION_LIMIT = parseInt(process.env.DB_CONNECTION_LIMIT) || 10;
@@ -139,7 +139,7 @@ class AIProviderManager {
   constructor() {
     this.providers = [
       new GeminiProvider(config.GEMINI_API_KEY),     // Primary
-      new AnthropicProvider(config.CLAUDE_API_KEY)   // Fallback
+      new OllamaProvider(config.OLLAMA_BASE_URL)     // Local Fallback
     ];
   }
   
@@ -213,6 +213,32 @@ CREATE DATABASE aviation_bot CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 -- Migrations run automatically via mysqlDatabase.js initialization
 ```
 
+### Ollama Local AI Setup
+```bash
+# Install Ollama (macOS/Linux)
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Start Ollama service
+ollama serve
+
+# Pull recommended models (in separate terminal)
+ollama pull llama3.2:3b      # Recommended for aviation content
+ollama pull gemma2:2b        # Lightweight alternative
+ollama pull qwen2.5:3b       # Multilingual support
+
+# Verify installation
+curl http://localhost:11434/api/tags
+```
+
+**Environment Variables:**
+```bash
+# Optional: Custom Ollama endpoint
+export OLLAMA_BASE_URL=http://localhost:11434
+
+# Primary AI (optional - will fallback to Ollama)
+export GEMINI_API_KEY=your_gemini_api_key
+```
+
 ## 📊 Operational Monitoring
 
 ### Health Check Endpoints
@@ -280,6 +306,15 @@ npm run test:coverage      # Coverage reports
 npm run test:integration   # Database & API tests
 npm run test:e2e          # End-to-end bot testing
 ```
+
+## 🔄 Recent Updates
+
+### Ollama Local Fallback Integration (Latest)
+- **Updated**: Replaced Anthropic Claude with Ollama as local AI fallback
+- **Local AI**: Ollama provides offline AI capabilities when cloud APIs are unavailable
+- **Models**: Supports multiple lightweight models (llama3.2, gemma2, qwen2.5, phi3)
+- **Fallback Strategy**: Primary Gemini → Local Ollama for maximum reliability
+- **Testing**: Added comprehensive test suite for Ollama integration
 
 ## 📈 Roadmap & Extensions
 

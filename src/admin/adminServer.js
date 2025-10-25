@@ -2,16 +2,19 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
 const multer = require('multer');
-const TopicService = require('../features/aviation-quiz-system/aviation-knowledge/topicService');
-const SimpleWeatherService = require('../features/weather/simpleWeatherService');
+const ApplicationFactory = require('../features/aviation-quiz-system/architecture/ApplicationFactory');
 
 class AdminServer {
   constructor(database) {
     this.app = express();
     this.port = 3000;
     this.database = database;
-    this.topicService = new TopicService(database);
-    this.weatherImageService = new SimpleWeatherService();
+    // Initialize new architecture
+    const applicationFactory = new ApplicationFactory();
+    const app = applicationFactory.createApp(database);
+    this.topicService = applicationFactory.getContainer().resolve('topicService');
+    // Weather service is now handled by the new architecture
+    this.weatherImageService = null;
     this.backupDir = path.join(__dirname, '../data/backups');
     
     this.setupMiddleware();

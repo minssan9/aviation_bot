@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY}:latest
+    environment:
+      - NODE_ENV=production
+      - BOT_TOKEN=${BOT_TOKEN}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - DB_HOST=${DB_HOST:-aviation}
+      - DB_PORT=${DB_PORT:-aviation}
+      - DB_USER=${DB_USER:-aviation}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-aviation_bot}
+    env_file:
+      - /data/devops/.env
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - aviation-network
+    volumes:
+      - /data:${BASE_PATH}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  aviation-network:
+    driver: bridge

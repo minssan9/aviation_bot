@@ -1,13 +1,13 @@
 const moment = require('moment-timezone');
-const { AviationKnowledgeManager } = require('../aviation-quiz-system/aviation-knowledge/aviationKnowledgeService');
 
 class CommandHandlers {
-  constructor(bot, userService, messageGenerator, aiProvider = null, scheduler = null) {
+  constructor(bot, userService, messageGenerator, aiProvider = null, scheduler = null, aviationKnowledgeService = null) {
     this.bot = bot;
     this.userService = userService;
     this.messageGenerator = messageGenerator;
     this.aiProvider = aiProvider;
     this.scheduler = scheduler;
+    this.aviationKnowledgeService = aviationKnowledgeService;
     this.setupHandlers();
   }
 
@@ -225,8 +225,8 @@ class CommandHandlers {
           // 오늘의 주제로 새 퀴즈 생성
           const now = moment().tz('Asia/Seoul');
           const dayOfWeek = now.day();
-          const todayKnowledge = await AviationKnowledgeManager.getKnowledgeByDay(dayOfWeek);
-          const randomSubject = await AviationKnowledgeManager.getRandomSubject(dayOfWeek);
+          const todayKnowledge = await this.aviationKnowledgeService.getKnowledgeByDay(dayOfWeek);
+          const randomSubject = await this.aviationKnowledgeService.getRandomSubjectByDay(dayOfWeek);
           
           const quizMessage = await this.messageGenerator.generateCustomQuiz(todayKnowledge.topic, randomSubject);
           await this.sendSafeMessage(chatId, quizMessage);
