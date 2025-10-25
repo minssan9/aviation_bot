@@ -5,9 +5,15 @@ class AnthropicProvider {
     this.client = new Anthropic({ apiKey });
   }
 
-  async generateQuiz(topic, knowledgeArea) {
+  async generateQuiz(topic, knowledgeArea, messageGenerator = null) {
     try {
-      const prompt = `항공 전문가로서 "${knowledgeArea}" 주제에 대한 상세한 4지 선다 문제를 1개 만들어 주세요.
+      let prompt;
+      
+      if (messageGenerator && typeof messageGenerator.generateQuizPrompt === 'function') {
+        prompt = messageGenerator.generateQuizPrompt(knowledgeArea);
+      } else {
+        // Fallback prompt if MessageGenerator is not available
+        prompt = `항공 전문가로서 "${knowledgeArea}" 주제에 대한 상세한 4지 선다 문제를 1개 만들어 주세요.
 
 요구사항:
 1. 문제는 사업용 조종사 수준의 전문적인 내용
@@ -30,6 +36,7 @@ D) [선택지 4]
 
 **해설:**
 [정답 해설 및 추가 설명]`;
+      }
 
       const response = await this.client.messages.create({
         model: 'claude-3-5-sonnet-20241022',

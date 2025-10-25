@@ -2,9 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const ConfigManager = require('./config/ConfigManager');
-const { DIContainer } = require('./container/DIContainer');
-const ErrorHandler = require('./middleware/ErrorHandler');
+const ConfigManager = require('./features/aviation-quiz-system/architecture/config/ConfigManager');
+const { DIContainer } = require('./features/aviation-quiz-system/architecture/container/DIContainer');
+const ErrorHandler = require('./features/aviation-quiz-system/architecture/middleware/ErrorHandler');
 
 /**
  * Main Application Factory
@@ -54,8 +54,9 @@ class ApplicationFactory {
    * @private
    */
   _createDatabaseConnection() {
-    const MySQLDatabase = require('../../config/database/mysqlDatabase');
-    const database = new MySQLDatabase(this.config.getConfig());
+    const MySQLDatabase = require('./config/database/mysqlDatabase');
+    // Pass environment variables directly to MySQLDatabase
+    const database = new MySQLDatabase(process.env);
     return database;
   }
 
@@ -94,28 +95,28 @@ class ApplicationFactory {
   _registerAviationQuizServices() {
     // Repositories
     this.container.registerSingleton('topicRepository', (container) => {
-      const MySQLTopicRepository = require('../aviation-quiz-system/architecture/repositories/implementations/MySQLTopicRepository');
+      const MySQLTopicRepository = require('./features/aviation-quiz-system/architecture/repositories/implementations/MySQLTopicRepository');
       return new MySQLTopicRepository(container.resolve('database'));
     });
 
     this.container.registerSingleton('subjectRepository', (container) => {
-      const MySQLSubjectRepository = require('../aviation-quiz-system/architecture/repositories/implementations/MySQLSubjectRepository');
+      const MySQLSubjectRepository = require('./features/aviation-quiz-system/architecture/repositories/implementations/MySQLSubjectRepository');
       return new MySQLSubjectRepository(container.resolve('database'));
     });
 
     this.container.registerSingleton('quizRepository', (container) => {
-      const MySQLQuizRepository = require('../aviation-quiz-system/architecture/repositories/implementations/MySQLQuizRepository');
+      const MySQLQuizRepository = require('./features/aviation-quiz-system/architecture/repositories/implementations/MySQLQuizRepository');
       return new MySQLQuizRepository(container.resolve('database'));
     });
 
     // Services
     this.container.registerSingleton('topicService', (container) => {
-      const TopicService = require('../aviation-quiz-system/architecture/services/TopicService');
+      const TopicService = require('./features/aviation-quiz-system/architecture/services/TopicService');
       return new TopicService(container.resolve('topicRepository'));
     });
 
     this.container.registerSingleton('subjectService', (container) => {
-      const SubjectService = require('../aviation-quiz-system/architecture/services/SubjectService');
+      const SubjectService = require('./features/aviation-quiz-system/architecture/services/SubjectService');
       return new SubjectService(
         container.resolve('subjectRepository'),
         container.resolve('topicRepository')
@@ -123,11 +124,55 @@ class ApplicationFactory {
     });
 
     this.container.registerSingleton('aviationKnowledgeService', (container) => {
-      const AviationKnowledgeService = require('../aviation-quiz-system/architecture/services/AviationKnowledgeService');
+      const AviationKnowledgeService = require('./features/aviation-quiz-system/architecture/services/AviationKnowledgeService');
       return new AviationKnowledgeService(
         container.resolve('topicService'),
         container.resolve('subjectService')
       );
+    });
+
+    // Controllers
+    this.container.registerSingleton('aviationKnowledgeController', (container) => {
+      const TopicController = require('./features/aviation-quiz-system/architecture/controllers/TopicController');
+      return new TopicController(
+        container.resolve('aviationKnowledgeService')
+      );
+    });
+
+    // Placeholder controllers for missing services
+    this.container.registerSingleton('userController', (container) => {
+      return {
+        getAllUsers: (req, res) => res.json({ message: 'User controller not implemented' }),
+        getUserById: (req, res) => res.json({ message: 'User controller not implemented' }),
+        createUser: (req, res) => res.json({ message: 'User controller not implemented' }),
+        updateUser: (req, res) => res.json({ message: 'User controller not implemented' }),
+        deleteUser: (req, res) => res.json({ message: 'User controller not implemented' })
+      };
+    });
+
+    this.container.registerSingleton('weatherController', (container) => {
+      return {
+        getLatestWeatherImage: (req, res) => res.json({ message: 'Weather controller not implemented' }),
+        downloadWeatherImage: (req, res) => res.json({ message: 'Weather controller not implemented' }),
+        getWeatherImages: (req, res) => res.json({ message: 'Weather controller not implemented' }),
+        getWeatherStats: (req, res) => res.json({ message: 'Weather controller not implemented' })
+      };
+    });
+
+    this.container.registerSingleton('messagingController', (container) => {
+      return {
+        handleWebhook: (req, res) => res.json({ message: 'Messaging controller not implemented' }),
+        getMessagingStatus: (req, res) => res.json({ message: 'Messaging controller not implemented' })
+      };
+    });
+
+    this.container.registerSingleton('schedulingController', (container) => {
+      return {
+        getAllSchedules: (req, res) => res.json({ message: 'Scheduling controller not implemented' }),
+        createSchedule: (req, res) => res.json({ message: 'Scheduling controller not implemented' }),
+        updateSchedule: (req, res) => res.json({ message: 'Scheduling controller not implemented' }),
+        deleteSchedule: (req, res) => res.json({ message: 'Scheduling controller not implemented' })
+      };
     });
   }
 
@@ -138,23 +183,23 @@ class ApplicationFactory {
   _registerUserManagementServices() {
     // Repositories
     this.container.registerSingleton('userRepository', (container) => {
-      const MySQLUserRepository = require('../user-management/architecture/repositories/implementations/MySQLUserRepository');
+      const MySQLUserRepository = require('./features/user-management/architecture/repositories/implementations/MySQLUserRepository');
       return new MySQLUserRepository(container.resolve('database'));
     });
 
     this.container.registerSingleton('subscriptionRepository', (container) => {
-      const MySQLSubscriptionRepository = require('../user-management/architecture/repositories/implementations/MySQLSubscriptionRepository');
+      const MySQLSubscriptionRepository = require('./features/user-management/architecture/repositories/implementations/MySQLSubscriptionRepository');
       return new MySQLSubscriptionRepository(container.resolve('database'));
     });
 
     // Services
     this.container.registerSingleton('userManagementService', (container) => {
-      const UserService = require('../user-management/architecture/services/UserService');
+      const UserService = require('./features/user-management/architecture/services/UserService');
       return new UserService(container.resolve('userRepository'));
     });
 
     this.container.registerSingleton('subscriptionService', (container) => {
-      const SubscriptionService = require('../user-management/architecture/services/SubscriptionService');
+      const SubscriptionService = require('./features/user-management/architecture/services/SubscriptionService');
       return new SubscriptionService(
         container.resolve('subscriptionRepository'),
         container.resolve('userRepository')
@@ -169,13 +214,13 @@ class ApplicationFactory {
   _registerWeatherServices() {
     // Repositories
     this.container.registerSingleton('weatherImageRepository', (container) => {
-      const MySQLWeatherImageRepository = require('../weather/architecture/repositories/implementations/MySQLWeatherImageRepository');
+      const MySQLWeatherImageRepository = require('./features/weather/architecture/repositories/implementations/MySQLWeatherImageRepository');
       return new MySQLWeatherImageRepository(container.resolve('database'));
     });
 
     // Services
     this.container.registerSingleton('weatherService', (container) => {
-      const WeatherService = require('../weather/architecture/services/WeatherService');
+      const WeatherService = require('./features/weather/architecture/services/WeatherService');
       return new WeatherService(
         container.resolve('config'),
         container.resolve('weatherImageRepository')
@@ -190,7 +235,7 @@ class ApplicationFactory {
   _registerBotTelegramServices() {
     // Services
     this.container.registerSingleton('telegramBotService', (container) => {
-      const TelegramBotService = require('../bot-telegram-if/architecture/services/TelegramBotService');
+      const TelegramBotService = require('./features/messaging/architecture/services/TelegramBotService');
       return new TelegramBotService(
         container.resolve('config'),
         container.resolve('userManagementService'),
@@ -199,7 +244,7 @@ class ApplicationFactory {
     });
 
     this.container.registerSingleton('commandHandlerService', (container) => {
-      const CommandHandlerService = require('../bot-telegram-if/architecture/services/CommandHandlerService');
+      const CommandHandlerService = require('./features/messaging/architecture/services/CommandHandlerService');
       return new CommandHandlerService(
         container.resolve('telegramBotService'),
         container.resolve('userManagementService'),
@@ -215,14 +260,14 @@ class ApplicationFactory {
   _registerSchedulingServices() {
     // Repositories
     this.container.registerSingleton('scheduleRepository', (container) => {
-      const MySQLScheduleRepository = require('../scheduling/architecture/repositories/implementations/MySQLScheduleRepository');
+      const MySQLScheduleRepository = require('./features/scheduling/architecture/repositories/implementations/MySQLScheduleRepository');
       return new MySQLScheduleRepository(container.resolve('database'));
     });
 
     // Services
     this.container.registerSingleton('schedulingService', (container) => {
-      const SchedulingService = require('../scheduling/architecture/services/SchedulingService');
-      return new SchedulingService(
+      const AviationBotScheduler = require('./scheduler');
+      return new AviationBotScheduler(
         container.resolve('scheduleRepository'),
         container.resolve('telegramBotService'),
         container.resolve('weatherService')
@@ -274,7 +319,7 @@ class ApplicationFactory {
           aviationQuiz: true,
           userManagement: true,
           weather: true,
-          botTelegram: true,
+          messaging: true,
           scheduling: true
         }
       });
@@ -284,11 +329,11 @@ class ApplicationFactory {
     this.app.use('/api/aviation', this._createAviationRoutes());
     this.app.use('/api/users', this._createUserRoutes());
     this.app.use('/api/weather', this._createWeatherRoutes());
-    this.app.use('/api/bot', this._createBotRoutes());
+    this.app.use('/api/messaging', this._createMessagingRoutes());
     this.app.use('/api/scheduling', this._createSchedulingRoutes());
     
     // 404 handler
-    this.app.use('*', (req, res) => {
+    this.app.use((req, res) => {
       res.status(404).json({
         success: false,
         message: 'Endpoint not found',
@@ -396,22 +441,22 @@ class ApplicationFactory {
   }
 
   /**
-   * Create bot routes
+   * Create messaging routes
    * @returns {Object} Express router
    * @private
    */
-  _createBotRoutes() {
+  _createMessagingRoutes() {
     const router = express.Router();
-    const controller = this.container.resolve('botController');
+    const controller = this.container.resolve('messagingController');
     const errorHandler = new ErrorHandler(this.config);
 
-    // Bot routes
+    // Messaging routes
     router.post('/webhook', errorHandler.catchAsync(async (req, res) => {
       await controller.handleWebhook(req, res);
     }));
 
     router.get('/status', errorHandler.catchAsync(async (req, res) => {
-      await controller.getBotStatus(req, res);
+      await controller.getMessagingStatus(req, res);
     }));
 
     return router;

@@ -12,9 +12,26 @@ class WeatherService {
     this.config = config;
     this.weatherImageRepository = weatherImageRepository;
     this.baseUrl = 'https://www.weather.go.kr/w/repositary/image/sat/gk2a/KO';
-    this.baseImageDir = path.join(config.BASE_PATH, 'data/weather-images');
+    // Handle both old config format and new ConfigManager format
+    const basePath = config.BASE_PATH || config.get?.('weather.basePath') || process.cwd();
+    this.baseImageDir = path.join(basePath, 'weather-images');
     this.timeout = 30000;
     this.maxRetries = 3;
+  }
+
+  /**
+   * Initialize the weather service
+   * @returns {Promise<void>}
+   */
+  async initialize() {
+    try {
+      // Ensure the base image directory exists
+      await this._ensureDirectoryExists();
+      console.log('WeatherService initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize WeatherService:', error);
+      throw error;
+    }
   }
 
   /**

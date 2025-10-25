@@ -4,9 +4,10 @@ const OllamaProvider = require('./ollama');
 const MySQLQuizRepository = require('../../architecture/repositories/implementations/MySQLQuizRepository');
 
 class AIProviderManager {
-  constructor(config, database) {
+  constructor(config, database, messageGenerator = null) {
     this.providers = [];
     this.quizService = new MySQLQuizRepository(database);
+    this.messageGenerator = messageGenerator;
     
     // Primary: Google AI Studio (무료) - 표준 환경 변수명 사용
     if (config.GEMINI_API_KEY) {
@@ -44,7 +45,7 @@ class AIProviderManager {
     for (const provider of this.providers) {
       try {
         console.log(`🤖 Using ${provider.name} provider for quiz generation...`);
-        const result = await provider.instance.generateQuiz(topic, knowledgeArea);
+        const result = await provider.instance.generateQuiz(topic, knowledgeArea, this.messageGenerator);
         console.log(`✅ Successfully generated quiz using ${provider.name}`);
         
         usedProvider = provider.name;

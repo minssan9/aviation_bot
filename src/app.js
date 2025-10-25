@@ -1,9 +1,9 @@
 const TelegramBot = require('node-telegram-bot-api');
 const config = require('./config/environment');
 const AIProviderManager = require('./features/aviation-quiz-system/message-generation/aiProviders/aiProvider');
-const ApplicationFactory = require('./features/aviation-quiz-system/architecture/ApplicationFactory');
+const ApplicationFactory = require('./ApplicationFactory');
 const MessageGenerator = require('./features/aviation-quiz-system/message-generation/messageGenerator');
-const CommandHandlers = require('./features/bot-telegram-if/commandHandlers');
+const CommandHandlers = require('./features/messaging/commandHandlers');
 const AdminServer = require('./admin/adminServer');
 
 class AviationBot {
@@ -32,8 +32,14 @@ class AviationBot {
       // Get database from the application factory
       const database = applicationFactory.getService('database');
       
-      // Initialize AI Provider Manager with database
-      this.aiProvider = new AIProviderManager(this.config, database);
+      // Initialize database connection
+      await database.initialize();
+      
+      // Create a temporary MessageGenerator for AI providers
+      const tempMessageGenerator = new MessageGenerator(null, this.aviationKnowledgeService);
+      
+      // Initialize AI Provider Manager with database and MessageGenerator
+      this.aiProvider = new AIProviderManager(this.config, database, tempMessageGenerator);
       
       // Check AI provider availability
       const providerStatus = await this.aiProvider.checkAvailability();
@@ -44,7 +50,7 @@ class AviationBot {
       
       console.log('✅ Database-driven aviation knowledge system initialized');
 
-      // Initialize other components with aviation knowledge service
+      // Initialize final MessageGenerator with AI provider
       this.messageGenerator = new MessageGenerator(this.aiProvider, this.aviationKnowledgeService);
       
       // Get services from the application factory

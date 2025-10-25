@@ -21,7 +21,7 @@ class MySQLTopicRepository extends ITopicRepository {
       LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.is_active = 1
       GROUP BY t.id
-      ORDER BY t.day_of_week ASC
+      ORDER BY t.day_of_month ASC, t.day_of_week ASC
     `;
     return await this.db.all(sql);
   }
@@ -66,13 +66,16 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async create(topicData) {
     const sql = `
-      INSERT INTO topics (name, description, day_of_week, is_active)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO topics (name, description, day_of_week, day_of_month, topic_category, difficulty_level, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     const result = await this.db.execute(sql, [
       topicData.name,
       topicData.description,
       topicData.dayOfWeek,
+      topicData.dayOfMonth,
+      topicData.topicCategory || 'General',
+      topicData.difficultyLevel || 'intermediate',
       topicData.isActive !== undefined ? topicData.isActive : true
     ]);
     return result.insertId;
@@ -99,6 +102,18 @@ class MySQLTopicRepository extends ITopicRepository {
     if (topicData.dayOfWeek !== undefined) {
       fields.push('day_of_week = ?');
       values.push(topicData.dayOfWeek);
+    }
+    if (topicData.dayOfMonth !== undefined) {
+      fields.push('day_of_month = ?');
+      values.push(topicData.dayOfMonth);
+    }
+    if (topicData.topicCategory !== undefined) {
+      fields.push('topic_category = ?');
+      values.push(topicData.topicCategory);
+    }
+    if (topicData.difficultyLevel !== undefined) {
+      fields.push('difficulty_level = ?');
+      values.push(topicData.difficultyLevel);
     }
     if (topicData.isActive !== undefined) {
       fields.push('is_active = ?');
@@ -204,6 +219,86 @@ class MySQLTopicRepository extends ITopicRepository {
     
     const params = [`%${query}%`, `%${query}%`, limit, offset];
     return await this.db.all(sql, params);
+  }
+
+  /**
+   * Get topic by date (simplified date-based system)
+   * @param {number} dayOfMonth - Day of month (1-31)
+   * @param {number} month - Month (1-12)
+   * @param {number} year - Year
+   * @returns {Promise<Object>} Topic record
+   */
+  async findByDate(dayOfMonth, month, year) {
+    const sql = `
+      SELECT t.*, COUNT(s.id) as subject_count
+      FROM topics t
+      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
+      WHERE t.day_of_month = ? 
+      AND t.is_active = 1
+      GROUP BY t.id
+      LIMIT 1
+    `;
+    
+    const result = await this.db.get(sql, [dayOfMonth]);
+    return result;
+  }
+
+  /**
+   * Get topic by day of month (simplified)
+   * @param {number} dayOfMonth - Day of month (1-31)
+   * @returns {Promise<Object>} Topic record
+   */
+  async findByDayOfMonth(dayOfMonth) {
+    const sql = `
+      SELECT t.*, COUNT(s.id) as subject_count
+      FROM topics t
+      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
+      WHERE t.day_of_month = ? 
+      AND t.is_active = 1
+      GROUP BY t.id
+      LIMIT 1
+    `;
+    
+    const result = await this.db.get(sql, [dayOfMonth]);
+    return result;
+  }
+
+  /**
+   * Get topics by category
+   * @param {string} category - Topic category
+   * @returns {Promise<Array>} Array of topic records
+   */
+  async findByCategory(category) {
+    const sql = `
+      SELECT t.*, COUNT(s.id) as subject_count
+      FROM topics t
+      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
+      WHERE t.topic_category = ? 
+      AND t.is_active = 1
+      GROUP BY t.id
+      ORDER BY t.day_of_month ASC
+    `;
+    
+    return await this.db.all(sql, [category]);
+  }
+
+  /**
+   * Get topics by difficulty level
+   * @param {string} difficultyLevel - Difficulty level
+   * @returns {Promise<Array>} Array of topic records
+   */
+  async findByDifficulty(difficultyLevel) {
+    const sql = `
+      SELECT t.*, COUNT(s.id) as subject_count
+      FROM topics t
+      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
+      WHERE t.difficulty_level = ? 
+      AND t.is_active = 1
+      GROUP BY t.id
+      ORDER BY t.day_of_month ASC
+    `;
+    
+    return await this.db.all(sql, [difficultyLevel]);
   }
 }
 

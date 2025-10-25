@@ -1,10 +1,10 @@
 const cron = require('node-cron');
 
 /**
- * Business logic service for Scheduling operations
- * Implements scheduling and task management
+ * Aviation Bot Scheduler
+ * Handles all scheduled tasks for the aviation bot system
  */
-class SchedulingService {
+class AviationBotScheduler {
   constructor(scheduleRepository, telegramBotService, weatherService) {
     this.scheduleRepository = scheduleRepository;
     this.telegramBotService = telegramBotService;
@@ -16,7 +16,7 @@ class SchedulingService {
    * Start all scheduled jobs
    */
   start() {
-    console.log('📅 Starting scheduler...');
+    console.log('📅 Starting aviation bot scheduler...');
     
     // Start aviation knowledge notifications
     this._startAviationKnowledgeJobs();
@@ -24,21 +24,21 @@ class SchedulingService {
     // Start weather collection jobs
     this._startWeatherJobs();
     
-    console.log('✅ Scheduler started successfully');
+    console.log('✅ Aviation bot scheduler started successfully');
   }
 
   /**
    * Stop all scheduled jobs
    */
   stop() {
-    console.log('⏹️ Stopping scheduler...');
+    console.log('⏹️ Stopping aviation bot scheduler...');
     
     this.jobs.forEach(job => {
       job.destroy();
     });
     
     this.jobs = [];
-    console.log('✅ Scheduler stopped successfully');
+    console.log('✅ Aviation bot scheduler stopped successfully');
   }
 
   /**
@@ -271,4 +271,4 @@ class SchedulingService {
   }
 }
 
-module.exports = SchedulingService;
+module.exports = AviationBotScheduler;

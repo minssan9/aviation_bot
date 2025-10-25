@@ -21,18 +21,7 @@ class AviationKnowledgeService {
       const topic = await this.topicService.getTopicByDayOfWeek(dayOfWeek);
       const subjects = await this.subjectService.getSubjectsByTopicId(topic.id);
       
-      return {
-        id: topic.id,
-        topic: topic.name,
-        description: topic.description,
-        dayOfWeek: topic.dayOfWeek,
-        subjects: subjects.map(s => ({
-          id: s.id,
-          title: s.title,
-          content: s.content,
-          difficultyLevel: s.difficultyLevel
-        }))
-      };
+      return this._formatKnowledgeResponse(topic, subjects, { dayOfWeek });
     } catch (error) {
       console.error(`Error getting knowledge for day ${dayOfWeek}:`, error);
       throw error;
@@ -49,14 +38,7 @@ class AviationKnowledgeService {
       const topic = await this.topicService.getTopicByDayOfWeek(dayOfWeek);
       const randomSubject = await this.subjectService.getRandomSubjectByTopicId(topic.id);
       
-      return {
-        id: randomSubject.id,
-        title: randomSubject.title,
-        content: randomSubject.content,
-        topicName: randomSubject.topicName,
-        dayOfWeek: randomSubject.dayOfWeek,
-        difficultyLevel: randomSubject.difficultyLevel
-      };
+      return this._formatSubjectResponse(randomSubject, topic, { dayOfWeek });
     } catch (error) {
       console.error(`Error getting random subject for day ${dayOfWeek}:`, error);
       throw error;
@@ -284,6 +266,117 @@ class AviationKnowledgeService {
       console.error(`Error deleting topic ${topicId} with subjects:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Get knowledge by date (new date-based system)
+   * @param {number} dayOfMonth - Day of month (1-31)
+   * @param {number} month - Month (1-12)
+   * @param {number} year - Year
+   * @returns {Promise<Object>} Knowledge data with topic and subjects
+   */
+  async getKnowledgeByDate(dayOfMonth, month, year) {
+    try {
+      const topic = await this.topicService.getTopicByDate(dayOfMonth, month, year);
+      const subjects = await this.subjectService.getSubjectsByTopicId(topic.id);
+      
+      return this._formatKnowledgeResponse(topic, subjects, { dayOfMonth, month, year });
+    } catch (error) {
+      console.error(`Error getting knowledge for date ${dayOfMonth}/${month}/${year}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get random subject by date (new date-based system)
+   * @param {number} dayOfMonth - Day of month (1-31)
+   * @param {number} month - Month (1-12)
+   * @param {number} year - Year
+   * @returns {Promise<Object>} Random subject data
+   */
+  async getRandomSubjectByDate(dayOfMonth, month, year) {
+    try {
+      const topic = await this.topicService.getTopicByDate(dayOfMonth, month, year);
+      const randomSubject = await this.subjectService.getRandomSubjectByTopicId(topic.id);
+      
+      return this._formatSubjectResponse(randomSubject, topic, { dayOfMonth, month, year });
+    } catch (error) {
+      console.error(`Error getting random subject for date ${dayOfMonth}/${month}/${year}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Format knowledge response with topic and subjects
+   * @private
+   * @param {Object} topic - Topic data
+   * @param {Array} subjects - Array of subjects
+   * @param {Object} context - Additional context (dayOfWeek, dayOfMonth, etc.)
+   * @returns {Object} Formatted knowledge response
+   */
+  _formatKnowledgeResponse(topic, subjects, context = {}) {
+    const baseResponse = {
+      id: topic.id,
+      topic: topic.name,
+      description: topic.description,
+      subjects: subjects.map(s => ({
+        id: s.id,
+        title: s.title,
+        content: s.content,
+        difficultyLevel: s.difficultyLevel,
+        sortOrder: s.sortOrder
+      }))
+    };
+
+    // Add context-specific fields
+    if (context.dayOfWeek !== undefined) {
+      baseResponse.dayOfWeek = context.dayOfWeek;
+    }
+    if (context.dayOfMonth !== undefined) {
+      baseResponse.dayOfMonth = context.dayOfMonth;
+    }
+    if (context.month !== undefined) {
+      baseResponse.month = context.month;
+    }
+    if (context.year !== undefined) {
+      baseResponse.year = context.year;
+    }
+
+    return baseResponse;
+  }
+
+  /**
+   * Format subject response with topic information
+   * @private
+   * @param {Object} subject - Subject data
+   * @param {Object} topic - Topic data
+   * @param {Object} context - Additional context
+   * @returns {Object} Formatted subject response
+   */
+  _formatSubjectResponse(subject, topic, context = {}) {
+    const baseResponse = {
+      id: subject.id,
+      title: subject.title,
+      content: subject.content,
+      difficultyLevel: subject.difficultyLevel,
+      topicName: topic.name
+    };
+
+    // Add context-specific fields
+    if (context.dayOfWeek !== undefined) {
+      baseResponse.dayOfWeek = context.dayOfWeek;
+    }
+    if (context.dayOfMonth !== undefined) {
+      baseResponse.dayOfMonth = context.dayOfMonth;
+    }
+    if (context.month !== undefined) {
+      baseResponse.month = context.month;
+    }
+    if (context.year !== undefined) {
+      baseResponse.year = context.year;
+    }
+
+    return baseResponse;
   }
 }
 
