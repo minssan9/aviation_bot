@@ -9,6 +9,7 @@ on:
 env:
   NODE_VERSION: '20'
   IMAGE_NAME: aviation-bot
+  VERSION: ${{ github.sha }} 
 
 jobs:
   test:
@@ -71,23 +72,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
-    - name: Copy deployment files to server
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.PRIVATE_KEY }}
-        source: "deployment/*"
-        target: "/opt/aviation-bot/"
-        strip_components: 1
-
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.PRIVATE_KEY }}
+        host: ${{secrets.DROPLET_HOST}}
+        username: ${{secrets.DROPLET_USERNAME}}
+        key: ${{ secrets.DROPLET_KEY }}
         script: |
           cd /data/devops/aviation-bot
 
