@@ -128,7 +128,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 
 # Application
 NODE_ENV=development
-PORT=3000
+PORT=3010
 JWT_SECRET=your_jwt_secret
 ```
 
@@ -177,8 +177,8 @@ const database = require('./config/database');
 const factory = new ApplicationFactory();
 const app = factory.createApp(database);
 
-app.listen(3000, () => {
-  console.log('Aviation Quiz System running on port 3000');
+app.listen(3010, () => {
+  console.log('Aviation Quiz System running on port 3010');
 });
 ```
 

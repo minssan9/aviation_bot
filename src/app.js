@@ -86,7 +86,7 @@ class AviationBot {
     console.log('🤖 항공지식 알림 봇이 시작되었습니다!');
     console.log('📅 스케줄: 오전 9시, 오후 2시, 저녁 8시 (KST)');
     console.log(`🎯 활성 AI 제공자: ${this.aiProvider.getActiveProviders().join(', ')}`);
-    console.log('🌐 어드민 페이지: http://localhost:3000');
+    console.log('🌐 어드민 페이지: http://localhost:3010');
     
     // Log aviation knowledge stats
     this._logAviationKnowledgeStats();

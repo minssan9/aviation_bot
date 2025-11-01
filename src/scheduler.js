@@ -48,37 +48,37 @@ class AviationBotScheduler {
   _startAviationKnowledgeJobs() {
     // Morning notification (9:00 AM KST)
     const morningJob = cron.schedule('0 9 * * *', async () => {
-      console.log('🌅 Sending morning aviation knowledge notification...');
+      console.log('🌅 [SCHEDULED] Morning aviation knowledge notification triggered at:', new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
       await this._sendAviationKnowledgeNotification('morning');
     }, {
-      scheduled: false,
+      scheduled: true,
       timezone: 'Asia/Seoul'
     });
 
     // Afternoon notification (2:00 PM KST)
     const afternoonJob = cron.schedule('0 14 * * *', async () => {
-      console.log('☀️ Sending afternoon aviation knowledge notification...');
+      console.log('☀️ [SCHEDULED] Afternoon aviation knowledge notification triggered at:', new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
       await this._sendAviationKnowledgeNotification('afternoon');
     }, {
-      scheduled: false,
+      scheduled: true,
       timezone: 'Asia/Seoul'
     });
 
     // Evening notification (8:00 PM KST)
     const eveningJob = cron.schedule('0 20 * * *', async () => {
-      console.log('🌙 Sending evening aviation knowledge notification...');
+      console.log('🌙 [SCHEDULED] Evening aviation knowledge notification triggered at:', new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
       await this._sendAviationKnowledgeNotification('evening');
     }, {
-      scheduled: false,
+      scheduled: true,
       timezone: 'Asia/Seoul'
     });
 
     this.jobs.push(morningJob, afternoonJob, eveningJob);
-    
-    // Start the jobs
-    morningJob.start();
-    afternoonJob.start();
-    eveningJob.start();
+
+    console.log('✅ Aviation knowledge jobs scheduled:');
+    console.log('   - Morning: 9:00 AM KST');
+    console.log('   - Afternoon: 2:00 PM KST');
+    console.log('   - Evening: 8:00 PM KST');
   }
 
   /**
@@ -88,27 +88,27 @@ class AviationBotScheduler {
   _startWeatherJobs() {
     // Weather image collection (every 30 minutes)
     const weatherJob = cron.schedule('*/30 * * * *', async () => {
-      console.log('🛰️ Collecting weather images...');
+      console.log('🛰️ [SCHEDULED] Weather image collection triggered at:', new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
       await this._collectWeatherImages();
     }, {
-      scheduled: false,
+      scheduled: true,
       timezone: 'Asia/Seoul'
     });
 
     // Weather cleanup (daily at 3:00 AM KST)
     const cleanupJob = cron.schedule('0 3 * * *', async () => {
-      console.log('🧹 Cleaning up old weather images...');
+      console.log('🧹 [SCHEDULED] Weather cleanup triggered at:', new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
       await this._cleanupWeatherImages();
     }, {
-      scheduled: false,
+      scheduled: true,
       timezone: 'Asia/Seoul'
     });
 
     this.jobs.push(weatherJob, cleanupJob);
-    
-    // Start the jobs
-    weatherJob.start();
-    cleanupJob.start();
+
+    console.log('✅ Weather jobs scheduled:');
+    console.log('   - Collection: Every 30 minutes');
+    console.log('   - Cleanup: Daily at 3:00 AM KST');
   }
 
   /**

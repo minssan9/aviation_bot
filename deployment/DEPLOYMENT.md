@@ -92,7 +92,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 ```bash
 # UFW 사용 시
-sudo ufw allow 3000/tcp
+sudo ufw allow 3010/tcp
 sudo ufw allow 3306/tcp
 ```
 
@@ -223,7 +223,7 @@ LOG_LEVEL=debug  # debug, info, warn, error
 
 ## 🌐 접속 정보
 
-- **Admin Interface**: http://your-server:3000
+- **Admin Interface**: http://your-server:3010
 - **Database**: your-server:3306
 - **Bot**: Telegram에서 직접 접속
 

@@ -7,7 +7,7 @@ const ApplicationFactory = require('../ApplicationFactory');
 class AdminServer {
   constructor(database) {
     this.app = express();
-    this.port = 3000;
+    this.port = 3010;
     this.database = database;
     // Initialize new architecture
     const applicationFactory = new ApplicationFactory();

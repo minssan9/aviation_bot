@@ -17,7 +17,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME:-aviation_bot}
     ports:
-      - "3000:3000"
+      - "3010:3010"
     volumes:
       - ./src:/app/src:ro
       - ./admin:/app/admin:ro

@@ -82,7 +82,7 @@ if docker-compose -f "$COMPOSE_FILE" ps | grep -q "Up"; then
 
     # Show service URLs
     echo "🌐 Service endpoints:"
-    echo "   • Admin Interface: http://localhost:3000"
+    echo "   • Admin Interface: http://localhost:3010"
     echo "   • Database: localhost:3306"
 
 else

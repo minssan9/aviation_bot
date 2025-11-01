@@ -31,7 +31,7 @@ class ConfigManager {
       
       // API configuration
       api: {
-        port: 3000,
+        port: 3010,
         host: '0.0.0.0',
         cors: {
           origin: '*',
@@ -135,7 +135,7 @@ class ConfigManager {
           database: process.env.DB_NAME || 'aviation_quiz_dev'
         },
         api: {
-          port: parseInt(process.env.PORT) || 3000
+          port: parseInt(process.env.PORT) || 3010
         },
         logging: {
           level: 'debug'
@@ -152,7 +152,7 @@ class ConfigManager {
           connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 20
         },
         api: {
-          port: parseInt(process.env.PORT) || 3000
+          port: parseInt(process.env.PORT) || 3010
         },
         logging: {
           level: 'info'
