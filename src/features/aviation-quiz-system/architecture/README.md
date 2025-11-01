@@ -99,27 +99,15 @@ This document describes the redesigned architecture for the Aviation Quiz System
 - `GET /api/topics/search` - Search topics
 - `GET /api/topics/stats` - Get topic statistics
 
-### Subjects
-- `GET /api/subjects` - Get all subjects
-- `GET /api/subjects/:id` - Get subject by ID
-- `GET /api/subjects/topic/:topicId` - Get subjects by topic
-- `GET /api/subjects/difficulty/:level` - Get subjects by difficulty
-- `GET /api/subjects/random` - Get random subject
-- `POST /api/subjects` - Create new subject
-- `PUT /api/subjects/:id` - Update subject
-- `DELETE /api/subjects/:id` - Delete subject
-- `PUT /api/subjects/topic/:topicId/order` - Update subject order
-- `GET /api/subjects/search` - Search subjects
-- `GET /api/subjects/stats` - Get subject statistics
 
 ### Knowledge
 - `GET /api/knowledge/day/:dayOfWeek` - Get knowledge by day
-- `GET /api/knowledge/random/:dayOfWeek` - Get random subject by day
+- `GET /api/knowledge/topic/:dayOfWeek` - Get topic by day
 - `GET /api/knowledge/topics` - Get all topics
 - `GET /api/knowledge/schedule` - Get weekly schedule
-- `GET /api/knowledge/difficulty/:level` - Get subjects by difficulty
-- `GET /api/knowledge/random` - Get random subject from all
-- `GET /api/knowledge/search` - Search subjects
+- `GET /api/knowledge/difficulty/:level` - Get topics by difficulty
+- `GET /api/knowledge/random` - Get random topic from all
+- `GET /api/knowledge/search` - Search topics
 - `GET /api/knowledge/stats` - Get comprehensive statistics
 
 ## Configuration
@@ -202,8 +190,8 @@ const knowledgeService = container.getAviationKnowledgeService();
 // Get knowledge for Monday
 const mondayKnowledge = await knowledgeService.getKnowledgeByDay(1);
 
-// Get random subject
-const randomSubject = await knowledgeService.getRandomSubjectFromAll();
+// Get random topic
+const randomTopic = await knowledgeService.getRandomTopicFromAll();
 ```
 
 ### Error Handling

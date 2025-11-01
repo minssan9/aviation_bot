@@ -226,9 +226,9 @@ class CommandHandlers {
           const now = moment().tz('Asia/Seoul');
           const dayOfWeek = now.day();
           const todayKnowledge = await this.aviationKnowledgeService.getKnowledgeByDay(dayOfWeek);
-          const randomSubject = await this.aviationKnowledgeService.getRandomSubjectByDay(dayOfWeek);
+          const randomTopic = await this.aviationKnowledgeService.getRandomTopicFromAll();
           
-          const quizMessage = await this.messageGenerator.generateCustomQuiz(todayKnowledge.topic, randomSubject);
+          const quizMessage = await this.messageGenerator.generateCustomQuiz(todayKnowledge.name, randomTopic);
           await this.sendSafeMessage(chatId, quizMessage);
         }
         

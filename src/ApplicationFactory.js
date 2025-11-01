@@ -99,10 +99,6 @@ class ApplicationFactory {
       return new MySQLTopicRepository(container.resolve('database'));
     });
 
-    this.container.registerSingleton('subjectRepository', (container) => {
-      const MySQLSubjectRepository = require('./features/aviation-quiz-system/architecture/repositories/implementations/MySQLSubjectRepository');
-      return new MySQLSubjectRepository(container.resolve('database'));
-    });
 
     this.container.registerSingleton('quizRepository', (container) => {
       const MySQLQuizRepository = require('./features/aviation-quiz-system/architecture/repositories/implementations/MySQLQuizRepository');
@@ -115,19 +111,11 @@ class ApplicationFactory {
       return new TopicService(container.resolve('topicRepository'));
     });
 
-    this.container.registerSingleton('subjectService', (container) => {
-      const SubjectService = require('./features/aviation-quiz-system/architecture/services/SubjectService');
-      return new SubjectService(
-        container.resolve('subjectRepository'),
-        container.resolve('topicRepository')
-      );
-    });
 
     this.container.registerSingleton('aviationKnowledgeService', (container) => {
       const AviationKnowledgeService = require('./features/aviation-quiz-system/architecture/services/AviationKnowledgeService');
       return new AviationKnowledgeService(
-        container.resolve('topicService'),
-        container.resolve('subjectService')
+        container.resolve('topicService')
       );
     });
 
@@ -358,7 +346,7 @@ class ApplicationFactory {
     }));
 
     router.get('/knowledge/random/:dayOfWeek', errorHandler.catchAsync(async (req, res) => {
-      await controller.getRandomSubjectByDay(req, res);
+      await controller.getRandomTopicByDay(req, res);
     }));
 
     router.get('/knowledge/topics', errorHandler.catchAsync(async (req, res) => {

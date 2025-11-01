@@ -113,11 +113,9 @@ class CommandHandlerService {
           '오늘의 항공지식을 찾을 수 없습니다. 잠시 후 다시 시도해주세요.');
       }
 
-      const quizMessage = `📚 오늘의 항공지식 (${knowledge.topic})
+      const quizMessage = `📚 오늘의 항공지식 (${knowledge.name})
 
-${knowledge.subjects.map((subject, index) => 
-  `${index + 1}. ${subject.title}`
-).join('\n')}
+${knowledge.description}
 
 💡 더 자세한 내용은 정기 알림을 통해 확인하실 수 있습니다!`;
 

@@ -98,17 +98,17 @@ class MySQLQuizRepository extends IQuizRepository {
    */
   async create(quizData) {
     const sql = `
-      INSERT INTO quizzes (topic, knowledge_area, question, options, correct_answer, explanation, difficulty_level, provider, is_active)
+      INSERT INTO quizzes (topic, knowledge_area, question, options, correct_answer, explanation, difficulty, provider, is_active)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const result = await this.db.execute(sql, [
-      quizData.topic,
-      quizData.knowledgeArea,
-      quizData.question,
-      JSON.stringify(quizData.options),
-      quizData.correctAnswer,
-      quizData.explanation,
-      quizData.difficultyLevel || 'intermediate',
+      quizData.topic ?? '',
+      quizData.knowledgeArea ?? '',
+      quizData.question ?? '',
+      quizData.options !== undefined ? JSON.stringify(quizData.options) : '',
+      quizData.correctAnswer ?? '',
+      quizData.explanation ?? '',
+      quizData.difficulty || 'intermediate',
       quizData.provider || 'unknown',
       quizData.isActive !== undefined ? quizData.isActive : true
     ]);
@@ -267,22 +267,24 @@ class MySQLQuizRepository extends IQuizRepository {
    * Save quiz (compatibility method)
    * @param {string} topic - Quiz topic
    * @param {string} knowledgeArea - Knowledge area
-   * @param {Object} quizData - Quiz data
+   * @param {Object} quizData - Quiz data with prompt and result
+   * @param {string} quizData.prompt - AI prompt used to generate quiz
+   * @param {Object} quizData.result - Generated quiz result
    * @param {string} provider - AI provider name
    * @returns {Promise<number>} Inserted quiz ID
    */
-  async saveQuiz(topic, knowledgeArea, quizData, provider) {
+  async saveQuiz(topic, knowledgeArea, { prompt, result }, provider) {
     const quizRecord = {
       topic,
       knowledgeArea,
-      question: quizData.question,
-      options: quizData.options,
-      correctAnswer: quizData.correctAnswer,
-      explanation: quizData.explanation,
-      difficultyLevel: quizData.difficultyLevel || 'intermediate',
+      question: prompt,
+      options: '',
+      correctAnswer: '',
+      explanation: result,
+      difficulty: result.difficultyLevel || 'intermediate',
       provider
     };
-    
+
     return await this.create(quizRecord);
   }
 

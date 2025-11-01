@@ -14,7 +14,6 @@ class MessageGenerator {
     
     // DB에서 데이터 가져오기 (fallback 지원)
     const todayKnowledge = await this._getKnowledgeByDate(dayOfMonth, month, year);
-    const randomSubject = await this._getRandomSubjectByDate(dayOfMonth, month, year);
     
     const timeEmojis = {
       morning: '🌅',
@@ -27,15 +26,15 @@ class MessageGenerator {
     
     // AI로 4지 선다 문제 생성
     try {
-      const aiResponse = await this.aiProvider.generateQuiz(todayKnowledge.topic, randomSubject);
+      const aiResponse = await this.aiProvider.generateQuiz(todayKnowledge.topic, todayKnowledge.description);
       if (aiResponse) {
         message += `🧠 <b>AI 생성 문제</b>\n\n${aiResponse}\n\n`;
       } else {
-        message += `🎯 <b>오늘의 학습 포인트</b>:\n${randomSubject}\n\n`;
+        message += `🎯 <b>오늘의 학습 포인트</b>:\n${todayKnowledge.description}\n\n`;
       }
     } catch (error) {
       console.error('AI 응답 생성 실패:', error);
-      message += `🎯 <b>오늘의 학습 포인트</b>:\n${randomSubject}\n\n`;
+      message += `🎯 <b>오늘의 학습 포인트</b>:\n${todayKnowledge.description}\n\n`;
     }
     
     message += await this._getTimeSpecificContent(timeSlot, dayOfMonth, month);
@@ -150,8 +149,8 @@ D) [선택지 4]
       if (this.aviationKnowledgeService) {
         const knowledge = await this.aviationKnowledgeService.getKnowledgeByDate(dayOfMonth, month, year);
         return {
-          topic: knowledge.topic,
-          subjects: knowledge.subjects.map(s => s.title)
+          topic: knowledge.name,
+          description: knowledge.description
         };
       }
     } catch (error) {
@@ -160,88 +159,41 @@ D) [선택지 4]
     
     // Fallback data - 31 days of topics
     const fallback = {
-      1: { topic: 'Engine Failure 대응' },
-      2: { topic: '양력 생성 원리' },
-      3: { topic: 'GPS 항법' },
-      4: { topic: '대기 구조' },
-      5: { topic: '엔진 시스템' },
-      6: { topic: '공역 분류' },
-      7: { topic: '중량과 균형' },
-      8: { topic: '실속과 회복' },
-      9: { topic: 'ILS 접근' },
-      10: { topic: '뇌우와 위험 기상' },
-      11: { topic: '전기 시스템' },
-      12: { topic: 'IFR 규정' },
-      13: { topic: '성능 계산' },
-      14: { topic: '위험 관리' },
-      15: { topic: '의사결정' },
-      16: { topic: '고도와 건강' },
-      17: { topic: '통신 절차' },
-      18: { topic: '복합 비상상황' },
-      19: { topic: '고속 비행' },
-      20: { topic: 'RNAV/RNP' },
-      21: { topic: '제트류와 대류권계면' },
-      22: { topic: '자동비행 시스템' },
-      23: { topic: '국제 규정' },
-      24: { topic: '장거리 비행' },
-      25: { topic: '안전 관리 시스템' },
-      26: { topic: '팀워크와 리더십' },
-      27: { topic: '스트레스와 피로' },
-      28: { topic: '비상 통신' },
-      29: { topic: '종합 복습' },
-      30: { topic: '실무 적용' },
-      31: { topic: '다음 달 준비' }
+      1: { topic: 'Engine Failure 대응', description: '엔진 고장 시 대응 절차와 안전 착륙 방법' },
+      2: { topic: '양력 생성 원리', description: 'Bernoulli의 원리와 실제 양력 생성 메커니즘' },
+      3: { topic: 'GPS 항법', description: 'GPS 시스템의 작동 원리와 WAAS 정밀접근' },
+      4: { topic: '대기 구조', description: '대기의 성층과 기상 현상의 관계' },
+      5: { topic: '엔진 시스템', description: '피스톤 엔진과 터빈 엔진의 작동 원리' },
+      6: { topic: '공역 분류', description: 'Class A, B, C, D, E 공역의 특성과 요구사항' },
+      7: { topic: '중량과 균형', description: 'Weight & Balance 계산과 CG 관리' },
+      8: { topic: '실속과 회복', description: 'Stall의 종류와 회복 절차' },
+      9: { topic: 'ILS 접근', description: 'ILS 시스템의 구성요소와 정밀접근 절차' },
+      10: { topic: '뇌우와 위험 기상', description: 'Thunderstorm의 생성과 조종사 대응방법' },
+      11: { topic: '전기 시스템', description: '항공기 전기 시스템과 고장 시 절차' },
+      12: { topic: 'IFR 규정', description: 'IFR 운항 규정과 Alternate Airport 요구사항' },
+      13: { topic: '성능 계산', description: 'Density Altitude와 항공기 성능 계산' },
+      14: { topic: '위험 관리', description: '위험 식별과 완화 전략' },
+      15: { topic: '의사결정', description: '조종사의 의사결정 과정과 CRM' },
+      16: { topic: '고도와 건강', description: '고도가 인체에 미치는 영향과 Hypoxia' },
+      17: { topic: '통신 절차', description: '표준 항공 통신 절차와 ICAO 용어' },
+      18: { topic: '복합 비상상황', description: '여러 시스템 고장 시 대응 절차' },
+      19: { topic: '고속 비행', description: '초음속 비행과 압축성 효과' },
+      20: { topic: 'RNAV/RNP', description: 'Performance Based Navigation의 개념과 활용' },
+      21: { topic: '제트류와 대류권계면', description: '고고도 기상과 제트류의 영향' },
+      22: { topic: '자동비행 시스템', description: '오토파일럿과 비행 관리 시스템' },
+      23: { topic: '국제 규정', description: 'ICAO 규정과 국제 운항 요구사항' },
+      24: { topic: '장거리 비행', description: 'ETOPS와 장거리 비행 계획' },
+      25: { topic: '안전 관리 시스템', description: 'SMS와 안전 문화 구축' },
+      26: { topic: '팀워크와 리더십', description: '크루 리소스 관리와 리더십' },
+      27: { topic: '스트레스와 피로', description: '조종사의 스트레스 관리와 피로 대응' },
+      28: { topic: '비상 통신', description: '비상상황 시 통신 절차와 표준 용어' },
+      29: { topic: '종합 복습', description: '이번 달 학습 내용 종합 복습' },
+      30: { topic: '실무 적용', description: '학습한 지식의 실제 적용 방법' },
+      31: { topic: '다음 달 준비', description: '다음 달 학습 계획 수립' }
     };
     return fallback[dayOfMonth] || fallback[1];
   }
 
-  async _getRandomSubjectByDate(dayOfMonth, month, year) {
-    try {
-      if (this.aviationKnowledgeService) {
-        const subject = await this.aviationKnowledgeService.getRandomSubjectByDate(dayOfMonth, month, year);
-        return subject.title;
-      }
-    } catch (error) {
-      console.error('DB query failed, using fallback:', error);
-    }
-    
-    // Fallback subjects for each day of the month
-    const fallbackSubjects = {
-      1: ['Engine Failure 시 Best Glide Speed와 Landing Site 선정', 'Spatial Disorientation 예방과 발생 시 대응방법'],
-      2: ['Bernoulli\'s Principle과 실제 양력 생성 원리의 차이점', 'Wing Loading이 항공기 성능에 미치는 영향'],
-      3: ['GPS WAAS와 기존 GPS의 차이점 및 정밀접근 가능성', 'VOR Station Check 절차와 정확도 확인 방법'],
-      4: ['대기의 구조와 성층권 비행', 'METAR/TAF 해석과 실제 비행계획 적용'],
-      5: ['피스톤 엔진과 터빈 엔진의 작동 원리', 'Turbocharged vs Supercharged Engine의 차이점과 운용방법'],
-      6: ['Class A, B, C, D, E Airspace의 입장 요건과 장비 요구사항', '사업용 조종사의 Duty Time과 Rest Requirements'],
-      7: ['Weight & Balance 계산과 CG Envelope 내 유지 방법', 'Takeoff/Landing Performance Chart 해석과 실제 적용'],
-      8: ['Stall의 종류와 각각의 특성', 'Adverse Yaw 현상과 조종사의 대응방법'],
-      9: ['ILS Approach의 구성요소와 Category별 최저기상조건', 'Localizer와 Glideslope의 작동 원리'],
-      10: ['Thunderstorm의 생성과정과 3단계', 'Wind Shear의 종류와 조종사 대응절차'],
-      11: ['Electrical System 구성과 Generator/Alternator 고장 시 절차', 'Hydraulic System의 작동원리와 백업 시스템'],
-      12: ['IFR Alternate Airport 선정 기준과 Fuel Requirements', 'Medical Certificate의 종류별 유효기간과 제한사항'],
-      13: ['Density Altitude 계산과 항공기 성능에 미치는 영향', 'Wind Triangle과 Ground Speed 계산'],
-      14: ['위험 식별과 완화 전략', 'Human Factors와 의사결정 오류'],
-      15: ['조종사의 의사결정 과정과 오류', 'CRM (Crew Resource Management)의 중요성'],
-      16: ['고도가 인체에 미치는 영향', 'Hypoxia의 증상과 대응방법'],
-      17: ['표준 항공 통신 절차와 용어', 'ICAO 표준 용어와 구문'],
-      18: ['여러 시스템 고장 시 대응', '복합 비상상황에서의 우선순위'],
-      19: ['초음속 비행과 압축성 효과', 'Transonic Flight의 특성'],
-      20: ['RNAV/RNP의 차이점과 활용', 'Performance Based Navigation의 개념'],
-      21: ['제트류와 대류권계면', '고고도 기상과 제트류의 영향'],
-      22: ['오토파일럿과 비행 관리 시스템', 'Fly-by-Wire 시스템의 특성'],
-      23: ['ICAO 규정과 국제 운항', '국제 항공법의 적용'],
-      24: ['장거리 비행 계획과 연료 관리', 'ETOPS (Extended Operations)의 개념'],
-      25: ['SMS와 안전 문화', 'Safety Management System의 구성요소'],
-      26: ['크루 리소스 관리', '팀워크와 리더십의 중요성'],
-      27: ['조종사의 스트레스 관리', '피로 관리와 휴식 요구사항'],
-      28: ['비상상황 시 통신 절차', 'Emergency Communication의 표준 절차'],
-      29: ['이번 달 학습 내용 종합 복습', '핵심 개념 정리와 실무 적용'],
-      30: ['학습한 지식의 실제 적용', '시뮬레이터 훈련과 실제 비행 연계'],
-      31: ['다음 달 학습 계획 수립', '개인별 학습 목표 설정']
-    };
-    const subjects = fallbackSubjects[dayOfMonth] || ['항공 안전 기본 지식'];
-    return subjects[Math.floor(Math.random() * subjects.length)];
-  }
 }
 
 module.exports = MessageGenerator;

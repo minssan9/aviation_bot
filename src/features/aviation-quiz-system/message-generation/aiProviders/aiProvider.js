@@ -45,20 +45,20 @@ class AIProviderManager {
     for (const provider of this.providers) {
       try {
         console.log(`🤖 Using ${provider.name} provider for quiz generation...`);
-        const result = await provider.instance.generateQuiz(topic, knowledgeArea, this.messageGenerator);
+        const { prompt, result } = await provider.instance.generateQuiz(topic, knowledgeArea, this.messageGenerator);
         console.log(`✅ Successfully generated quiz using ${provider.name}`);
-        
+
         usedProvider = provider.name;
-        
+
         // 생성된 퀴즈를 데이터베이스에 저장
         try {
-          await this.quizService.saveQuiz(topic, knowledgeArea, result, provider.name);
+          await this.quizService.saveQuiz(topic, knowledgeArea, { prompt, result }, provider.name);
         } catch (dbError) {
           console.warn('⚠️ Failed to save quiz to database:', dbError.message);
           // DB 저장 실패해도 퀴즈는 반환
         }
-        
-        return result;
+
+        return { prompt, result };
       } catch (error) {
         console.warn(`⚠️ ${provider.name} provider failed:`, error.message);
         lastError = error;

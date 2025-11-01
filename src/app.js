@@ -113,11 +113,10 @@ class AviationBot {
   async _logAviationKnowledgeStats() {
     try {
       const stats = await this.aviationKnowledgeService.getStats();
-      console.log(`📊 항공지식 DB 통계: ${stats.totalTopics}개 토픽, ${stats.totalSubjects}개 주제`);
-      console.log(`📈 토픽당 평균 주제 수: ${stats.averageSubjectsPerTopic}개`);
-      
-      if (stats.subjectsByDifficulty) {
-        const difficultyStats = Object.entries(stats.subjectsByDifficulty)
+      console.log(`📊 항공지식 DB 통계: ${stats.totalTopics}개 토픽`);
+       
+      if (stats.topicsByDifficulty) {
+        const difficultyStats = Object.entries(stats.topicsByDifficulty)
           .map(([level, count]) => `${level}: ${count}개`)
           .join(', ');
         console.log(`🎯 난이도별 분포: ${difficultyStats}`);

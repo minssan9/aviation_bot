@@ -11,7 +11,6 @@ class TopicDTO {
     this.isActive = data.is_active;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
-    this.subjectCount = data.subject_count || 0;
   }
 
   /**
@@ -35,8 +34,7 @@ class TopicDTO {
       dayOfMonth: this.dayOfMonth,
       isActive: this.isActive,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-      subjectCount: this.subjectCount
+      updatedAt: this.updatedAt
     };
   }
 

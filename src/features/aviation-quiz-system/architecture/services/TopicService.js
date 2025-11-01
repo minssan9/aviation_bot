@@ -146,8 +146,7 @@ class TopicService {
         id: s.id,
         day: s.day_name,
         dayOfMonth: s.day_of_month,
-        topic: s.topic,
-        subjectCount: s.subject_count
+        topic: s.topic
       }));
     } catch (error) {
       console.error('Error getting weekly schedule:', error);

@@ -115,10 +115,6 @@ class AviationQuizContainer extends DIContainer {
       return new MySQLTopicRepository(container.resolve('database'));
     });
 
-    this.registerSingleton('subjectRepository', (container) => {
-      const MySQLSubjectRepository = require('../repositories/implementations/MySQLSubjectRepository');
-      return new MySQLSubjectRepository(container.resolve('database'));
-    });
 
     this.registerSingleton('quizRepository', (container) => {
       const MySQLQuizRepository = require('../repositories/implementations/MySQLQuizRepository');
@@ -131,19 +127,11 @@ class AviationQuizContainer extends DIContainer {
       return new TopicService(container.resolve('topicRepository'));
     });
 
-    this.registerSingleton('subjectService', (container) => {
-      const SubjectService = require('../services/SubjectService');
-      return new SubjectService(
-        container.resolve('subjectRepository'),
-        container.resolve('topicRepository')
-      );
-    });
 
     this.registerSingleton('aviationKnowledgeService', (container) => {
       const AviationKnowledgeService = require('../services/AviationKnowledgeService');
       return new AviationKnowledgeService(
-        container.resolve('topicService'),
-        container.resolve('subjectService')
+        container.resolve('topicService')
       );
     });
 
@@ -153,13 +141,6 @@ class AviationQuizContainer extends DIContainer {
       return new TopicController(container.resolve('topicService'));
     });
 
-    this.registerSingleton('subjectController', (container) => {
-      const SubjectController = require('../controllers/SubjectController');
-      return new SubjectController(
-        container.resolve('subjectService'),
-        container.resolve('topicService')
-      );
-    });
 
     this.registerSingleton('aviationKnowledgeController', (container) => {
       const AviationKnowledgeController = require('../controllers/AviationKnowledgeController');
@@ -175,13 +156,6 @@ class AviationQuizContainer extends DIContainer {
     return this.resolve('topicController');
   }
 
-  /**
-   * Get subject controller
-   * @returns {SubjectController} Subject controller instance
-   */
-  getSubjectController() {
-    return this.resolve('subjectController');
-  }
 
   /**
    * Get aviation knowledge controller

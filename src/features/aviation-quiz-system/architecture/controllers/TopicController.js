@@ -280,6 +280,93 @@ class TopicController {
   }
 
   /**
+   * Get knowledge by day of week
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  async getKnowledgeByDay(req, res) {
+    try {
+      const { dayOfWeek } = req.params;
+      const day = parseInt(dayOfWeek);
+      
+      if (day < 0 || day > 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Day of week must be between 0 and 6'
+        });
+      }
+      
+      // Convert day of week to day of month (simplified mapping)
+      const dayOfMonth = day + 1;
+      const topic = await this.topicService.getTopicByDayOfMonth(dayOfMonth);
+      
+      res.json({
+        success: true,
+        message: 'Knowledge retrieved successfully',
+        data: {
+          topic: topic.toJSON(),
+          dayOfWeek: day
+        }
+      });
+    } catch (error) {
+      console.error('Error in getKnowledgeByDay:', error);
+      
+      if (error.message.includes('No topic found')) {
+        res.status(404).json({
+          success: false,
+          message: error.message
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: 'Failed to retrieve knowledge',
+          error: error.message
+        });
+      }
+    }
+  }
+
+  /**
+   * Get random topic by day of week
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  async getRandomTopicByDay(req, res) {
+    try {
+      const { dayOfWeek } = req.params;
+      const day = parseInt(dayOfWeek);
+      
+      if (day < 0 || day > 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Day of week must be between 0 and 6'
+        });
+      }
+      
+      // Get all topics and pick a random one
+      const topics = await this.topicService.getAllTopics();
+      const randomIndex = Math.floor(Math.random() * topics.length);
+      const randomTopic = topics[randomIndex];
+      
+      res.json({
+        success: true,
+        message: 'Random topic retrieved successfully',
+        data: {
+          topic: randomTopic.toJSON(),
+          dayOfWeek: day
+        }
+      });
+    } catch (error) {
+      console.error('Error in getRandomTopicByDay:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve random topic',
+        error: error.message
+      });
+    }
+  }
+
+  /**
    * Get topic statistics
    * @param {Object} req - Request object
    * @param {Object} res - Response object
@@ -298,6 +385,30 @@ class TopicController {
       res.status(500).json({
         success: false,
         message: 'Failed to retrieve topic statistics',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Get statistics (alias for getTopicStats)
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   */
+  async getStats(req, res) {
+    try {
+      const stats = await this.topicService.getTopicStats();
+      
+      res.json({
+        success: true,
+        message: 'Statistics retrieved successfully',
+        data: stats
+      });
+    } catch (error) {
+      console.error('Error in getStats:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve statistics',
         error: error.message
       });
     }

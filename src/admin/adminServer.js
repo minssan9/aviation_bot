@@ -105,10 +105,9 @@ class AdminServer {
         const knowledgeData = {};
         
         for (const topic of topics) {
-          const subjects = await this.topicService.getSubjectsByTopic(topic.id);
           knowledgeData[topic.day_of_month] = {
             topic: topic.name,
-            subjects: subjects.map(s => s.title)
+            description: topic.description
           };
         }
         
@@ -127,14 +126,14 @@ class AdminServer {
     this.app.put('/api/knowledge/:day', async (req, res) => {
       try {
         const day = parseInt(req.params.day);
-        const { topic, subjects } = req.body;
+        const { topic, description } = req.body;
 
         if (day < 0 || day > 6) {
           return res.status(400).json({ error: '잘못된 요일입니다' });
         }
 
-        if (!topic || !subjects || !Array.isArray(subjects)) {
-          return res.status(400).json({ error: '주제와 세부 주제가 필요합니다' });
+        if (!topic) {
+          return res.status(400).json({ error: '토픽명이 필요합니다' });
         }
 
         // DB에서 해당 요일의 토픽 찾기
@@ -144,27 +143,8 @@ class AdminServer {
           return res.status(404).json({ error: '해당 요일의 토픽을 찾을 수 없습니다' });
         }
 
-        // 토픽 정보 업데이트
-        await this.topicService.updateTopic(existingTopic.id, topic, '', day);
-
-        // 기존 주제들 비활성화 (soft delete)
-        const existingSubjects = await this.topicService.getSubjectsByTopic(existingTopic.id);
-        for (const subject of existingSubjects) {
-          await this.topicService.deleteSubject(subject.id);
-        }
-
-        // 새 주제들 추가
-        for (let i = 0; i < subjects.length; i++) {
-          await this.topicService.createSubject(
-            existingTopic.id,
-            subjects[i],
-            '',
-            'intermediate',
-            i + 1
-          );
-        }
-
-        // DB update successful - no file fallback needed
+        // 토픽 정보 업데이트 (description은 선택값)
+        await this.topicService.updateTopic(existingTopic.id, topic, description || '', day);
 
         res.json({ success: true, message: '데이터가 업데이트되었습니다' });
       } catch (error) {
@@ -183,10 +163,9 @@ class AdminServer {
         const backupData = {};
         
         for (const topic of topics) {
-          const subjects = await this.topicService.getSubjectsByTopic(topic.id);
           backupData[topic.day_of_month] = {
             topic: topic.name,
-            subjects: subjects.map(s => s.title)
+            description: topic.description
           };
         }
         
@@ -285,17 +264,7 @@ class AdminServer {
       }
     });
 
-    // 토픽별 주제 조회
-    this.app.get('/api/topics/:id/subjects', async (req, res) => {
-      try {
-        const topicId = parseInt(req.params.id);
-        const subjects = await this.topicService.getSubjectsByTopic(topicId);
-        res.json(subjects);
-      } catch (error) {
-        console.error('주제 조회 오류:', error);
-        res.status(500).json({ error: '주제를 조회할 수 없습니다' });
-      }
-    });
+    // (removed) 주제 관련 API는 더 이상 제공하지 않습니다
 
     // 토픽 생성
     this.app.post('/api/topics', async (req, res) => {
@@ -336,91 +305,15 @@ class AdminServer {
       }
     });
 
-    // 주제 생성
-    this.app.post('/api/subjects', async (req, res) => {
-      try {
-        const { topicId, title, content, difficultyLevel, sortOrder } = req.body;
-        
-        if (!topicId || !title) {
-          return res.status(400).json({ error: '토픽ID와 제목은 필수입니다' });
-        }
+    // (removed) 주제 생성 API는 더 이상 제공하지 않습니다
 
-        const id = await this.topicService.createSubject(
-          topicId, title, content, difficultyLevel, sortOrder
-        );
-        res.json({ success: true, id, message: '주제가 생성되었습니다' });
-      } catch (error) {
-        console.error('주제 생성 오류:', error);
-        res.status(500).json({ error: '주제를 생성할 수 없습니다' });
-      }
-    });
+    // (removed) 주제 업데이트 API는 더 이상 제공하지 않습니다
 
-    // 주제 업데이트
-    this.app.put('/api/subjects/:id', async (req, res) => {
-      try {
-        const id = parseInt(req.params.id);
-        const { title, content, difficultyLevel, sortOrder } = req.body;
-        
-        if (!title) {
-          return res.status(400).json({ error: '제목은 필수입니다' });
-        }
+    // (removed) 주제 삭제 API는 더 이상 제공하지 않습니다
 
-        await this.topicService.updateSubject(id, title, content, difficultyLevel, sortOrder);
-        res.json({ success: true, message: '주제가 업데이트되었습니다' });
-      } catch (error) {
-        console.error('주제 업데이트 오류:', error);
-        res.status(500).json({ error: '주제를 업데이트할 수 없습니다' });
-      }
-    });
+    // (removed) 주제 순서 업데이트 API는 더 이상 제공하지 않습니다
 
-    // 주제 삭제
-    this.app.delete('/api/subjects/:id', async (req, res) => {
-      try {
-        const id = parseInt(req.params.id);
-        await this.topicService.deleteSubject(id);
-        res.json({ success: true, message: '주제가 삭제되었습니다' });
-      } catch (error) {
-        console.error('주제 삭제 오류:', error);
-        res.status(500).json({ error: '주제를 삭제할 수 없습니다' });
-      }
-    });
-
-    // 주제 순서 업데이트
-    this.app.put('/api/topics/:id/subjects/order', async (req, res) => {
-      try {
-        const topicId = parseInt(req.params.id);
-        const { subjectOrders } = req.body;
-        
-        if (!Array.isArray(subjectOrders)) {
-          return res.status(400).json({ error: '주제 순서 배열이 필요합니다' });
-        }
-
-        await this.topicService.updateSubjectOrder(topicId, subjectOrders);
-        res.json({ success: true, message: '주제 순서가 업데이트되었습니다' });
-      } catch (error) {
-        console.error('주제 순서 업데이트 오류:', error);
-        res.status(500).json({ error: '주제 순서를 업데이트할 수 없습니다' });
-      }
-    });
-
-    // 주제 검색
-    this.app.get('/api/subjects/search', async (req, res) => {
-      try {
-        const { q: query, topic_id: topicId, difficulty } = req.query;
-        
-        if (!query || query.trim() === '') {
-          return res.status(400).json({ error: '검색어가 필요합니다' });
-        }
-
-        const subjects = await this.topicService.searchSubjects(
-          query.trim(), topicId ? parseInt(topicId) : null, difficulty
-        );
-        res.json(subjects);
-      } catch (error) {
-        console.error('주제 검색 오류:', error);
-        res.status(500).json({ error: '주제를 검색할 수 없습니다' });
-      }
-    });
+    // (removed) 주제 검색 API는 더 이상 제공하지 않습니다
 
     // 통계 정보
     this.app.get('/api/topics/stats', async (req, res) => {
@@ -578,10 +471,7 @@ class AdminServer {
       try {
         await connection.beginTransaction();
         
-        // 모든 기존 주제를 비활성화 (soft delete)
-        await connection.execute('UPDATE subjects SET is_active = 0');
-        
-        // 백업 데이터로 복원
+        // 백업 데이터로 복원 (토픽만 반영)
         for (let day = 0; day < 7; day++) {
           const dayData = backupData[day];
           if (!dayData) continue;
@@ -599,25 +489,11 @@ class AdminServer {
           
           const topicId = topicRows[0].id;
           
-          // 토픽 이름 업데이트
+          // 토픽 정보 업데이트 (이름/설명)
           await connection.execute(
-            'UPDATE topics SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [dayData.topic, topicId]
+            'UPDATE topics SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [dayData.topic, dayData.description || '', topicId]
           );
-          
-          // 새 주제들 추가
-          for (let i = 0; i < dayData.subjects.length; i++) {
-            await connection.execute(
-              `INSERT INTO subjects (topic_id, title, content, difficulty_level, sort_order, is_active)
-               VALUES (?, ?, '', 'intermediate', ?, 1)
-               ON DUPLICATE KEY UPDATE
-               title = VALUES(title),
-               is_active = 1,
-               sort_order = VALUES(sort_order),
-               updated_at = CURRENT_TIMESTAMP`,
-              [topicId, dayData.subjects[i], i + 1]
-            );
-          }
         }
         
         await connection.commit();
@@ -646,9 +522,7 @@ class AdminServer {
         errors.push('토픽이 없습니다');
       }
       
-      if (stats.totalSubjects === 0) {
-        errors.push('주제가 없습니다');
-      }
+
       
       // Check for all weekdays
       for (let day = 0; day < 7; day++) {
@@ -693,20 +567,9 @@ class AdminServer {
         errors.push(`${day}요일 주제가 유효하지 않습니다`);
       }
 
-      if (!Array.isArray(dayData.subjects)) {
-        errors.push(`${day}요일 세부 주제가 배열이 아닙니다`);
-        continue;
+      if (dayData.description !== undefined && typeof dayData.description !== 'string') {
+        errors.push(`${day}요일 설명이 문자열이 아닙니다`);
       }
-
-      if (dayData.subjects.length === 0) {
-        errors.push(`${day}요일 세부 주제가 비어있습니다`);
-      }
-
-      dayData.subjects.forEach((subject, index) => {
-        if (typeof subject !== 'string' || subject.trim() === '') {
-          errors.push(`${day}요일 ${index + 1}번째 세부 주제가 유효하지 않습니다`);
-        }
-      });
     }
 
     return {

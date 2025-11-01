@@ -11,16 +11,14 @@ class MySQLTopicRepository extends ITopicRepository {
   }
 
   /**
-   * Get all active topics with subject count
+   * Get all active topics
    * @returns {Promise<Array>} Array of topic records
    */
   async findAll() {
     const sql = `
-      SELECT t.*, COUNT(s.id) as subject_count
+      SELECT t.*
       FROM topics t
-      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.is_active = 1
-      GROUP BY t.id
       ORDER BY t.day_of_month ASC
     `;
     return await this.db.all(sql);
@@ -33,11 +31,9 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async findById(id) {
     const sql = `
-      SELECT t.*, COUNT(s.id) as subject_count
+      SELECT t.*
       FROM topics t
-      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.id = ? AND t.is_active = 1
-      GROUP BY t.id
     `;
     return await this.db.get(sql, [id]);
   }
@@ -49,11 +45,9 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async findByDayOfMonth(dayOfMonth) {
     const sql = `
-      SELECT t.*, COUNT(s.id) as subject_count
+      SELECT t.*
       FROM topics t
-      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.day_of_month = ? AND t.is_active = 1
-      GROUP BY t.id
       LIMIT 1
     `;
     return await this.db.get(sql, [dayOfMonth]);
@@ -149,12 +143,9 @@ class MySQLTopicRepository extends ITopicRepository {
   async getWeeklySchedule() {
     const sql = `
       SELECT t.id, t.name as topic, t.day_of_month, 
-             COUNT(s.id) as subject_count,
              CONCAT(t.day_of_month, '일') as day_name
       FROM topics t
-      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.is_active = 1
-      GROUP BY t.id
       ORDER BY t.day_of_month ASC
     `;
     return await this.db.all(sql);
@@ -166,18 +157,16 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async getStats() {
     const totalTopics = await this.db.get('SELECT COUNT(*) as count FROM topics WHERE is_active = 1');
-    const totalSubjects = await this.db.get('SELECT COUNT(*) as count FROM subjects WHERE is_active = 1');
-    const subjectsByDifficulty = await this.db.all(`
+    const topicsByDifficulty = await this.db.all(`
       SELECT difficulty_level, COUNT(*) as count 
-      FROM subjects 
+      FROM topics 
       WHERE is_active = 1 
       GROUP BY difficulty_level
     `);
     
     return {
       totalTopics: totalTopics.count,
-      totalSubjects: totalSubjects.count,
-      subjectsByDifficulty: subjectsByDifficulty.reduce((acc, item) => {
+      topicsByDifficulty: topicsByDifficulty.reduce((acc, item) => {
         acc[item.difficulty_level] = item.count;
         return acc;
       }, {})
@@ -194,12 +183,10 @@ class MySQLTopicRepository extends ITopicRepository {
     const { limit = 20, offset = 0 } = options;
     
     let sql = `
-      SELECT t.*, COUNT(s.id) as subject_count
+      SELECT t.*
       FROM topics t
-      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.is_active = 1
       AND (t.name LIKE ? OR t.description LIKE ?)
-      GROUP BY t.id
       ORDER BY t.name ASC
       LIMIT ? OFFSET ?
     `;
@@ -217,12 +204,10 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async findByDate(dayOfMonth, month, year) {
     const sql = `
-      SELECT t.*, COUNT(s.id) as subject_count
+      SELECT t.*
       FROM topics t
-      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.day_of_month = ? 
       AND t.is_active = 1
-      GROUP BY t.id
       LIMIT 1
     `;
     
@@ -237,12 +222,10 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async findByDayOfMonth(dayOfMonth) {
     const sql = `
-      SELECT t.*, COUNT(s.id) as subject_count
+      SELECT t.*
       FROM topics t
-      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.day_of_month = ? 
       AND t.is_active = 1
-      GROUP BY t.id
       LIMIT 1
     `;
     
@@ -257,12 +240,10 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async findByCategory(category) {
     const sql = `
-      SELECT t.*, COUNT(s.id) as subject_count
+      SELECT t.*
       FROM topics t
-      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.topic_category = ? 
       AND t.is_active = 1
-      GROUP BY t.id
       ORDER BY t.day_of_month ASC
     `;
     
@@ -276,12 +257,10 @@ class MySQLTopicRepository extends ITopicRepository {
    */
   async findByDifficulty(difficultyLevel) {
     const sql = `
-      SELECT t.*, COUNT(s.id) as subject_count
+      SELECT t.*
       FROM topics t
-      LEFT JOIN subjects s ON t.id = s.topic_id AND s.is_active = 1
       WHERE t.difficulty_level = ? 
       AND t.is_active = 1
-      GROUP BY t.id
       ORDER BY t.day_of_month ASC
     `;
     
