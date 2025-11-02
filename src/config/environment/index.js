@@ -3,7 +3,7 @@ require('dotenv').config();
 class Config {
   constructor() {
     // Telegram Bot
-    this.BOT_TOKEN = process.env.BOT_TOKEN;
+    this.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     
     // AI Providers
     this.GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -32,8 +32,8 @@ class Config {
 
   validate() {
     // Bot Token validation
-    if (!this.BOT_TOKEN) {
-      console.error('❌ BOT_TOKEN is required in .env file');
+    if (!this.TELEGRAM_BOT_TOKEN) {
+      console.error('❌ TELEGRAM_BOT_TOKEN is required in .env file');
       process.exit(1);
     }
 
@@ -60,7 +60,7 @@ class Config {
   getConfig() {
     return {
       // Bot Configuration
-      BOT_TOKEN: this.BOT_TOKEN,
+      TELEGRAM_BOT_TOKEN: this.TELEGRAM_BOT_TOKEN,
       
       // AI Provider Keys
       GEMINI_API_KEY: this.GEMINI_API_KEY,

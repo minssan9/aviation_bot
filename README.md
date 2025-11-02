@@ -104,7 +104,7 @@ src/
 // Environment-based configuration with validation
 class Config {
   constructor() {
-    this.BOT_TOKEN = process.env.BOT_TOKEN;           // Telegram bot token
+    this.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;           // Telegram bot token
     this.GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Google AI
     this.OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'; // Ollama Local
     // MySQL configuration
@@ -181,7 +181,7 @@ npm install
 
 # Environment configuration
 cp .env.example .env
-# Configure: BOT_TOKEN, GEMINI_API_KEY, CLAUDE_API_KEY, DB_*
+# Configure: TELEGRAM_BOT_TOKEN, GEMINI_API_KEY, CLAUDE_API_KEY, DB_*
 
 # Development server
 npm run dev          # Hot reload with nodemon

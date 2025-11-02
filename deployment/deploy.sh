@@ -36,7 +36,7 @@ echo "✅ Required files found"
 source .env
 
 # Check required environment variables
-required_vars=("BOT_TOKEN" "GEMINI_API_KEY" "DB_PASSWORD" "GITHUB_REPOSITORY")
+required_vars=("TELEGRAM_BOT_TOKEN" "GEMINI_API_KEY" "DB_PASSWORD" "GITHUB_REPOSITORY")
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         echo "❌ Error: $var is not set in .env file"

@@ -22,7 +22,7 @@ class AviationBot {
       console.log('🤖 항공지식 알림 봇을 초기화하는 중...');
       
       // Initialize Telegram Bot
-      this.bot = new TelegramBot(this.config.BOT_TOKEN, { polling: true });
+      this.bot = new TelegramBot(this.config.TELEGRAM_BOT_TOKEN, { polling: true });
       
       // Initialize new architecture
       const applicationFactory = new ApplicationFactory();
