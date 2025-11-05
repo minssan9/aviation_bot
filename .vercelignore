@@ -1,0 +1,67 @@
+# Vercel Ignore File
+# Files and directories to exclude from Vercel deployment
+
+# Development
+node_modules/
+.env
+.env.local
+.env.development
+.env.test
+
+# Testing
+test/
+tests/
+*.test.js
+*.spec.js
+coverage/
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker (not needed for Vercel)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Scripts (if not needed)
+scripts/
+
+# Legacy bot file (using new structure)
+bot.js
+
+# Admin server (handled separately in webhook)
+admin/
