@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
 const multer = require('multer');
+const cors = require('cors');
 const ApplicationFactory = require('../ApplicationFactory');
 
 class AdminServer {
@@ -15,7 +16,7 @@ class AdminServer {
     this.topicService = applicationFactory.getContainer().resolve('topicService');
     // Get weather service from the new architecture
     this.weatherImageService = applicationFactory.getContainer().resolve('weatherService');
-    this.backupDir = path.join(__dirname, '../data/backups');
+    this.backupDir = path.join(__dirname, '../../data/backups');
     
     this.setupMiddleware();
     this.setupRoutes();
@@ -24,8 +25,19 @@ class AdminServer {
   }
 
   setupMiddleware() {
+    // CORS configuration for development
+    this.app.use(cors({
+      origin: ['http://localhost:5173', 'http://localhost:3000'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true
+    }));
+    
     this.app.use(express.json());
-    this.app.use(express.static(path.join(__dirname, '../../admin')));
+    // Serve frontend build files in production, or allow dev server proxy in development
+    if (process.env.NODE_ENV === 'production') {
+      this.app.use(express.static(path.join(__dirname, '../../../frontend/dist')));
+    }
     
     // Request logging for debugging
     this.app.use((req, res, next) => {
@@ -37,7 +49,7 @@ class AdminServer {
     });
     
     // Multer for file uploads
-    const upload = multer({ dest: 'temp/' });
+    const upload = multer({ dest: path.join(__dirname, '../../../temp/') });
     this.upload = upload;
   }
 
@@ -59,10 +71,13 @@ class AdminServer {
   }
 
   setupRoutes() {
-    // 메인 어드민 페이지
-    this.app.get('/', (req, res) => {
-      res.sendFile(path.join(__dirname, '../../admin/index.html'));
-    });
+    // 메인 어드민 페이지 - serve frontend in production
+    if (process.env.NODE_ENV === 'production') {
+      this.app.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, '../../../frontend/dist/index.html'));
+      });
+      // Handle Vue Router history mode - must be after API routes
+    }
 
     // 개발 도구 관련 404 처리
     const devToolsRoutes = ['/client', '/main.ts', '/pwa-entry-point-loaded'];
@@ -441,6 +456,18 @@ class AdminServer {
         });
       }
     });
+
+    // Vue Router history mode fallback - must be last
+    if (process.env.NODE_ENV === 'production') {
+      this.app.get('*', (req, res) => {
+        // Only handle non-API routes
+        if (!req.path.startsWith('/api')) {
+          res.sendFile(path.join(__dirname, '../../../frontend/dist/index.html'));
+        } else {
+          res.status(404).json({ error: 'Not Found' });
+        }
+      });
+    }
   }
 
   // Static fallback data (replaces aviationKnowledge.js file)

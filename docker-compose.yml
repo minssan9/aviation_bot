@@ -19,8 +19,9 @@ services:
     ports:
       - "3010:3010"
     volumes:
-      - ./src:/app/src:ro
-      - ./admin:/app/admin:ro
+      - ./backend/src:/app/backend/src:ro
+      - ./backend/data:/app/backend/data
+      - ./frontend/dist:/app/frontend/dist:ro
     restart: unless-stopped
     depends_on:
       db:

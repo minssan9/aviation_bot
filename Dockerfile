@@ -1,7 +1,15 @@
 # syntax=docker/dockerfile:1.7
 
-# Build stage
-FROM node:20-alpine AS build
+# Frontend build stage
+FROM node:20-alpine AS frontend-build
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci && npm cache clean --force
+COPY frontend ./
+RUN npm run build
+
+# Backend build stage
+FROM node:20-alpine AS backend-build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
@@ -18,11 +26,11 @@ RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
 # Copy dependencies
-COPY --from=build --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=backend-build --chown=nodejs:nodejs /app/node_modules ./node_modules
 
 # Copy application files
-COPY --chown=nodejs:nodejs src ./src
-COPY --chown=nodejs:nodejs admin ./admin
+COPY --chown=nodejs:nodejs backend ./backend
+COPY --from=frontend-build --chown=nodejs:nodejs /app/frontend/dist ./frontend/dist
 COPY --chown=nodejs:nodejs package*.json ./
 
 # Switch to non-root user
@@ -39,4 +47,4 @@ EXPOSE 3010
 ENTRYPOINT ["/sbin/tini", "--"]
 
 # Start application
-CMD ["node", "src/app.js"]
+CMD ["node", "backend/src/app.js"]
