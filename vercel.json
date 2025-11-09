@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/webhook.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/cron/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/webhook",
+      "dest": "/api/webhook.js"
+    },
+    {
+      "src": "/api/cron/(.*)",
+      "dest": "/api/cron/$1.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "crons": [
+    {
+      "path": "/api/cron/morning",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/afternoon",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/evening",
+      "schedule": "0 20 * * *"
+    }
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 60
+    }
+  }
+}
