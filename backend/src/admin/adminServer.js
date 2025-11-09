@@ -8,7 +8,7 @@ const ApplicationFactory = require('../ApplicationFactory');
 class AdminServer {
   constructor(database) {
     this.app = express();
-    this.port = 3010;
+    this.port = process.env.ADMIN_PORT || 3011;
     this.database = database;
     // Initialize new architecture
     const applicationFactory = new ApplicationFactory();
@@ -333,7 +333,7 @@ class AdminServer {
     // 통계 정보
     this.app.get('/api/topics/stats', async (req, res) => {
       try {
-        const stats = await this.topicService.getStats();
+        const stats = await this.topicService.getTopicStats();
         res.json(stats);
       } catch (error) {
         console.error('통계 조회 오류:', error);
@@ -388,12 +388,58 @@ class AdminServer {
     this.app.get('/api/weather/images', async (req, res) => {
       try {
         const limit = parseInt(req.query.limit) || 20;
-        const images = await this.weatherImageService.getStoredImages(limit);
+        
+        // Parse date range parameters (format: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)
+        let startDate = null;
+        let endDate = null;
+        
+        if (req.query.startDate) {
+          startDate = new Date(req.query.startDate);
+          if (isNaN(startDate.getTime())) {
+            return res.status(400).json({
+              success: false,
+              error: 'Invalid startDate format. Use YYYY-MM-DD or ISO 8601 format.'
+            });
+          }
+          // Set to start of day if only date is provided
+          if (!req.query.startDate.includes('T')) {
+            startDate.setHours(0, 0, 0, 0);
+          }
+        }
+        
+        if (req.query.endDate) {
+          endDate = new Date(req.query.endDate);
+          if (isNaN(endDate.getTime())) {
+            return res.status(400).json({
+              success: false,
+              error: 'Invalid endDate format. Use YYYY-MM-DD or ISO 8601 format.'
+            });
+          }
+          // Set to end of day if only date is provided
+          if (!req.query.endDate.includes('T')) {
+            endDate.setHours(23, 59, 59, 999);
+          }
+        }
+        
+        // Validate date range
+        if (startDate && endDate && startDate > endDate) {
+          return res.status(400).json({
+            success: false,
+            error: 'startDate must be before or equal to endDate'
+          });
+        }
+        
+        const images = await this.weatherImageService.getStoredImages(limit, startDate, endDate);
         
         res.json({
           success: true,
           timestamp: new Date().toISOString(),
           count: images.length,
+          filters: {
+            limit,
+            startDate: startDate ? startDate.toISOString() : null,
+            endDate: endDate ? endDate.toISOString() : null
+          },
           images: images.map(image => ({
             filename: image.filename,
             size: image.size,
@@ -401,6 +447,7 @@ class AdminServer {
             sizeMB: Math.round(image.size / 1024 / 1024 * 10) / 10,
             created: image.created,
             modified: image.modified,
+            capturedAt: image.capturedAt ? image.capturedAt.toISOString() : null,
             filepath: image.filepath
           }))
         });

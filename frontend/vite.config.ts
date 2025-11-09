@@ -3,13 +3,15 @@ import vue from '@vitejs/plugin-vue';
 import { quasar, transformAssetUrls } from '@quasar/vite-plugin';
 import { fileURLToPath, URL } from 'node:url';
 
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
 export default defineConfig({
   plugins: [
     vue({
       template: { transformAssetUrls }
     }),
     quasar({
-      sassVariables: 'src/quasar-variables.sass'
+      sassVariables: fileURLToPath(new URL('./src/quasar-variables.sass', import.meta.url))
     })
   ],
   resolve: {
@@ -21,7 +23,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3010',
+        target: 'http://localhost:3011',
         changeOrigin: true
       }
     }

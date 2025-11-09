@@ -73,9 +73,13 @@ export const weatherApi = {
     return response.data;
   },
 
-  getImages: async (limit = 20): Promise<ApiResponse<{ count: number; images: WeatherImage[] }>> => {
+  getImages: async (limit = 20, startDate?: string, endDate?: string): Promise<ApiResponse<{ count: number; images: WeatherImage[] }>> => {
+    const params: any = { limit };
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    
     const response = await apiClient.get<ApiResponse<{ count: number; images: WeatherImage[] }>>('/weather/images', {
-      params: { limit }
+      params
     });
     return response.data;
   },

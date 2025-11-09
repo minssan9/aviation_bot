@@ -198,6 +198,138 @@ class WeatherService {
   }
 
   /**
+   * Download image (alias for downloadWeatherImage)
+   * @returns {Promise<Object>} Download result
+   */
+  async downloadImage() {
+    return await this.downloadWeatherImage();
+  }
+
+  /**
+   * Get stored images from filesystem
+   * @param {number} limit - Maximum number of images to return
+   * @param {Date} startDate - Optional start date for filtering
+   * @param {Date} endDate - Optional end date for filtering
+   * @returns {Promise<Array>} Array of image file information
+   */
+  async getStoredImages(limit = 20, startDate = null, endDate = null) {
+    try {
+      await this._ensureDirectoryExists();
+      const files = await fs.readdir(this.baseImageDir);
+      
+      // Filter image files and get their stats
+      const imageFiles = [];
+      for (const file of files) {
+        if (file.match(/\.(png|jpg|jpeg|gif)$/i)) {
+          const filePath = path.join(this.baseImageDir, file);
+          try {
+            const stats = await fs.stat(filePath);
+            
+            // Extract date from filename (format: kma_ko_rgb_YYYYMMDD_HHMM.png)
+            let fileDate = null;
+            const dateMatch = file.match(/(\d{8})_(\d{4})/);
+            if (dateMatch) {
+              const dateStr = dateMatch[1]; // YYYYMMDD
+              const timeStr = dateMatch[2]; // HHMM
+              const year = parseInt(dateStr.substring(0, 4));
+              const month = parseInt(dateStr.substring(4, 6)) - 1; // Month is 0-indexed
+              const day = parseInt(dateStr.substring(6, 8));
+              const hour = parseInt(timeStr.substring(0, 2));
+              const minute = parseInt(timeStr.substring(2, 4));
+              fileDate = new Date(year, month, day, hour, minute);
+            } else {
+              // Fallback to file modified time if date can't be extracted from filename
+              fileDate = stats.mtime;
+            }
+            
+            // Apply date range filter if provided
+            if (startDate && fileDate < startDate) {
+              continue;
+            }
+            if (endDate && fileDate > endDate) {
+              continue;
+            }
+            
+            imageFiles.push({
+              filename: file,
+              filepath: filePath,
+              size: stats.size,
+              created: stats.birthtime,
+              modified: stats.mtime,
+              capturedAt: fileDate // Add captured date from filename
+            });
+          } catch (error) {
+            console.warn(`Error reading file ${file}:`, error.message);
+          }
+        }
+      }
+
+      // Sort by captured date (newest first) and limit
+      imageFiles.sort((a, b) => {
+        const dateA = a.capturedAt || a.modified;
+        const dateB = b.capturedAt || b.modified;
+        return dateB - dateA;
+      });
+      return imageFiles.slice(0, limit);
+    } catch (error) {
+      console.error('Error getting stored images:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get service status
+   * @returns {Promise<Object>} Service status information
+   */
+  async getStatus() {
+    try {
+      // Try to fetch latest image to check service availability
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hour = String(now.getHours()).padStart(2, '0');
+      const minute = String(now.getMinutes()).padStart(2, '0');
+      
+      const filename = `kma_ko_rgb_${year}${month}${day}_${hour}${minute}.png`;
+      const testUrl = `${this.baseUrl}/${filename}`;
+
+      // Check if directory exists and is accessible
+      await this._ensureDirectoryExists();
+
+      return {
+        status: 'available',
+        currentTimestamp: `${year}${month}${day}_${hour}${minute}`,
+        testUrl: testUrl,
+        baseUrl: this.baseUrl,
+        baseImageDir: this.baseImageDir
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        error: error.message,
+        currentTimestamp: null,
+        testUrl: null
+      };
+    }
+  }
+
+  /**
+   * Cleanup old images (alias for cleanupOldImages)
+   * @param {number} daysToKeep - Number of days to keep
+   * @returns {Promise<number>} Number of deleted files
+   */
+  async cleanup(daysToKeep = 7) {
+    try {
+      const result = await this.cleanupOldImages(daysToKeep);
+      return result.deletedCount || 0;
+    } catch (error) {
+      console.error('Error during cleanup:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Fetch latest image data from weather service
    * @returns {Promise<Object>} Image data
    * @private
