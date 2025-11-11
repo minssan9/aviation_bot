@@ -347,7 +347,7 @@ class AdminServer {
     this.app.post('/api/weather/collect', async (req, res) => {
       try {
         console.log('📡 위성사진 수집 API 호출');
-        const result = await this.weatherImageService.downloadImage();
+        const result = await this.weatherImageService.downloadWeatherImage();
         
         res.json({
           success: true,
@@ -368,7 +368,7 @@ class AdminServer {
       try {
         console.log('🛰️ 위성사진 직접 수집 API 호출');
         
-        const result = await this.weatherImageService.downloadImage();
+        const result = await this.weatherImageService.downloadWeatherImage();
         
         res.json({
           success: true,
@@ -497,6 +497,45 @@ class AdminServer {
         });
       } catch (error) {
         console.error('이미지 정리 API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // 위성사진 이미지 파일 서빙
+    this.app.get('/api/weather/image/:filename', async (req, res) => {
+      try {
+        const filename = req.params.filename;
+        // Security: prevent directory traversal
+        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+          return res.status(400).json({ error: 'Invalid filename' });
+        }
+        
+        const imagePath = path.resolve(this.weatherImageService.baseImageDir, filename);
+        
+        // Verify the resolved path is still within baseImageDir (security check)
+        const baseDir = path.resolve(this.weatherImageService.baseImageDir);
+        if (!imagePath.startsWith(baseDir)) {
+          return res.status(400).json({ error: 'Invalid file path' });
+        }
+        
+        // Check if file exists
+        try {
+          await fs.access(imagePath);
+        } catch (error) {
+          return res.status(404).json({ error: 'Image not found' });
+        }
+        
+        // Send file with appropriate content type
+        res.sendFile(imagePath, {
+          headers: {
+            'Content-Type': 'image/png'
+          }
+        });
+      } catch (error) {
+        console.error('이미지 서빙 오류:', error);
         res.status(500).json({
           success: false,
           error: error.message

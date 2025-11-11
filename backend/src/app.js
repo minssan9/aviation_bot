@@ -56,6 +56,7 @@ class AviationBot {
       // Get services from the application factory
       const userService = applicationFactory.getService('userManagementService');
       const scheduler = applicationFactory.getService('schedulingService');
+      this.scheduler = scheduler;
       
       this.commandHandlers = new CommandHandlers(
         this.bot, 
@@ -82,6 +83,10 @@ class AviationBot {
     
     // Start admin server
     this.adminServer.start();
+    // Start scheduler (runs in both dev and prod)
+    if (this.scheduler) {
+      this.scheduler.start();
+    }
     
     console.log('🤖 항공지식 알림 봇이 시작되었습니다!');
     console.log('📅 스케줄: 오전 9시, 오후 2시, 저녁 8시 (KST)');

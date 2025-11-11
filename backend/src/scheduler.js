@@ -86,9 +86,9 @@ class AviationBotScheduler {
    * @private
    */
   _startWeatherJobs() {
-    // Weather image collection (every 30 minutes)
-    const weatherJob = cron.schedule('*/30 * * * *', async () => {
-      console.log('🛰️ [SCHEDULED] Weather image collection triggered at:', new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
+    // Weather image collection (every 10 minutes) - GK2A KO is ~10min cadence
+    const weatherJob = cron.schedule('*/10 * * * *', async () => {
+      console.log('🛰️ [SCHEDULED] Weather image sync triggered at:', new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }));
       await this._collectWeatherImages();
     }, {
       scheduled: true,
@@ -133,11 +133,18 @@ class AviationBotScheduler {
   async _collectWeatherImages() {
     try {
       if (this.weatherService) {
-        const result = await this.weatherService.downloadWeatherImage();
-        if (result.success) {
-          console.log('✅ Weather image collected successfully');
-        } else {
-          console.error('❌ Failed to collect weather image:', result.error);
+        // First, try syncing missing images from the list API (recent 24 timestamps)
+        try {
+          const sync = await this.weatherService.syncImagesFromList(24);
+          console.log(`✅ Weather sync: processed=${sync.processed}, downloaded=${sync.downloaded}, skipped=${sync.skipped}, errors=${sync.errors}`);
+        } catch (e) {
+          console.warn('⚠️ Weather sync via list API failed, fallback to single download:', e.message);
+          const result = await this.weatherService.downloadWeatherImage();
+          if (result.success) {
+            console.log('✅ Weather image collected (fallback) successfully');
+          } else {
+            console.error('❌ Failed to collect weather image (fallback):', result.error);
+          }
         }
       }
     } catch (error) {

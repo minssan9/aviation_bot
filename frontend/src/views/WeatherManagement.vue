@@ -44,7 +44,7 @@
               <q-card-section>
                 <div class="text-subtitle2 q-mb-md">날짜 범위 필터</div>
                 <div class="row q-col-gutter-md">
-                  <div class="col-12 col-sm-5">
+                  <div class="col-12 col-sm-4">
                     <q-input
                       v-model="startDate"
                       label="시작 날짜"
@@ -52,10 +52,9 @@
                       outlined
                       dense
                       clearable
-                      @update:model-value="loadImages"
                     />
                   </div>
-                  <div class="col-12 col-sm-5">
+                  <div class="col-12 col-sm-4">
                     <q-input
                       v-model="endDate"
                       label="종료 날짜"
@@ -63,7 +62,16 @@
                       outlined
                       dense
                       clearable
-                      @update:model-value="loadImages"
+                    />
+                  </div>
+                  <div class="col-12 col-sm-2">
+                    <q-btn
+                      color="primary"
+                      icon="search"
+                      label="조회"
+                      @click="loadImages"
+                      :loading="loading"
+                      class="full-width"
                     />
                   </div>
                   <div class="col-12 col-sm-2">
@@ -97,6 +105,7 @@
               row-key="filename"
               :loading="loading"
               :rows-per-page-options="[10, 20, 50]"
+              @row-click="(_evt, row) => openImageDialog(row)"
             >
               <template v-slot:body-cell-size="props">
                 <q-td :props="props">
@@ -137,6 +146,45 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- Image Viewer Dialog -->
+    <q-dialog v-model="showImageDialog" maximized>
+      <q-card>
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-h6">{{ selectedImage?.filename }}</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section class="q-pt-sm">
+          <div class="row q-col-gutter-sm q-mb-md">
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey">촬영일시</div>
+              <div>{{ selectedImage?.capturedAt ? new Date(selectedImage.capturedAt).toLocaleString('ko-KR') : '-' }}</div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <div class="text-caption text-grey">파일 크기</div>
+              <div>{{ selectedImage?.sizeMB }} MB</div>
+            </div>
+          </div>
+          <div class="image-container">
+            <img
+              v-if="imageUrl"
+              :src="imageUrl"
+              :alt="selectedImage?.filename"
+              class="weather-image"
+              @error="handleImageError"
+            />
+            <div v-else-if="imageLoading" class="flex flex-center" style="min-height: 400px">
+              <q-spinner color="primary" size="3em" />
+            </div>
+            <div v-else class="flex flex-center text-negative" style="min-height: 400px">
+              이미지를 불러올 수 없습니다
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -154,8 +202,37 @@ const collecting = ref(false);
 const cleaning = ref(false);
 const showCleanupDialog = ref(false);
 const cleanupDays = ref(7);
-const startDate = ref<string>('');
-const endDate = ref<string>('');
+const showImageDialog = ref(false);
+const selectedImage = ref<WeatherImage | null>(null);
+const imageUrl = ref<string>('');
+const imageLoading = ref(false);
+
+// Helper function to format date for input field
+function formatDateForInput(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Set default dates: 2 weeks ago and today
+function getDefaultDates() {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999); // End of today
+  
+  const twoWeeksAgo = new Date(today);
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  twoWeeksAgo.setHours(0, 0, 0, 0); // Start of day
+  
+  return {
+    start: formatDateForInput(twoWeeksAgo),
+    end: formatDateForInput(today)
+  };
+}
+
+const defaultDates = getDefaultDates();
+const startDate = ref<string>(defaultDates.start);
+const endDate = ref<string>(defaultDates.end);
 const quickDateRange = ref<string>('');
 
 const imageColumns = [
@@ -204,22 +281,33 @@ async function loadImages() {
   loading.value = true;
   try {
     const response = await weatherApi.getImages(50, startDate.value || undefined, endDate.value || undefined);
-    if (response.success && response.data) {
-      weatherImages.value = response.data.images;
+    if (response.success) {
+      // Handle both response.data.images and response.images formats
+      if (response.data && response.data.images) {
+        weatherImages.value = response.data.images;
+      } else if (response.images) {
+        weatherImages.value = response.images;
+      } else {
+        weatherImages.value = [];
+      }
+    } else {
+      throw new Error(response.error || '이미지 조회 실패');
     }
   } catch (error: any) {
     $q.notify({
       type: 'negative',
-      message: '이미지 로딩 실패: ' + error.message
+      message: '이미지 로딩 실패: ' + (error.message || error)
     });
+    weatherImages.value = [];
   } finally {
     loading.value = false;
   }
 }
 
 function clearDateFilter() {
-  startDate.value = '';
-  endDate.value = '';
+  const defaults = getDefaultDates();
+  startDate.value = defaults.start;
+  endDate.value = defaults.end;
   quickDateRange.value = '';
   loadImages();
 }
@@ -259,13 +347,6 @@ function applyQuickDateRange(value: string) {
   }
   
   loadImages();
-}
-
-function formatDateForInput(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 async function loadStatus() {
@@ -327,13 +408,51 @@ async function performCleanup() {
   }
 }
 
+function openImageDialog(row: WeatherImage) {
+  selectedImage.value = row;
+  imageLoading.value = true;
+  imageUrl.value = '';
+  showImageDialog.value = true;
+  
+  // Load image
+  if (row.filename) {
+    imageUrl.value = `/api/weather/image/${encodeURIComponent(row.filename)}`;
+    imageLoading.value = false;
+  }
+}
+
+function handleImageError() {
+  imageLoading.value = false;
+  imageUrl.value = '';
+  $q.notify({
+    type: 'negative',
+    message: '이미지를 불러올 수 없습니다'
+  });
+}
+
 onMounted(() => {
+  // Load images with default date range (2 weeks ago to today)
   loadImages();
   loadStatus();
 });
 </script>
 
 <style scoped lang="sass">
+.weather-image
+  width: 100%
+  height: auto
+  max-height: calc(100vh - 200px)
+  object-fit: contain
+  border: 1px solid #e0e0e0
+  border-radius: 4px
+
+.image-container
+  display: flex
+  justify-content: center
+  align-items: center
+  background-color: #f5f5f5
+  border-radius: 4px
+  padding: 16px
 </style>
 
 

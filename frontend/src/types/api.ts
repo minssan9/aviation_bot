@@ -20,6 +20,7 @@ export interface WeatherImage {
   sizeMB: number;
   created: string;
   modified: string;
+  capturedAt?: string;
   filepath: string;
 }
 
