@@ -26,6 +26,28 @@
           </q-card-section>
 
           <q-card-section>
+            <q-card flat bordered>
+              <q-card-section>
+                <div class="row items-center justify-between">
+                  <div>
+                    <div class="text-subtitle2">자동 수집 설정</div>
+                    <div class="text-caption text-grey">
+                      스케줄러가 자동으로 날씨 이미지를 수집합니다 (10분마다)
+                    </div>
+                  </div>
+                  <q-toggle
+                    v-model="gatheringEnabled"
+                    @update:model-value="toggleGathering"
+                    :loading="togglingGathering"
+                    color="primary"
+                    size="lg"
+                  />
+                </div>
+              </q-card-section>
+            </q-card>
+          </q-card-section>
+
+          <q-card-section>
             <q-card flat bordered class="q-mb-md">
               <q-card-section>
                 <div class="text-subtitle2">서비스 상태</div>
@@ -206,6 +228,8 @@ const showImageDialog = ref(false);
 const selectedImage = ref<WeatherImage | null>(null);
 const imageUrl = ref<string>('');
 const imageLoading = ref(false);
+const gatheringEnabled = ref(true);
+const togglingGathering = ref(false);
 
 // Helper function to format date for input field
 function formatDateForInput(date: Date): string {
@@ -430,10 +454,47 @@ function handleImageError() {
   });
 }
 
+async function loadGatheringStatus() {
+  try {
+    const response = await weatherApi.getGatheringEnabled();
+    if (response.success && response.data) {
+      gatheringEnabled.value = response.data.enabled;
+    }
+  } catch (error: any) {
+    console.error('Gathering status loading failed:', error);
+  }
+}
+
+async function toggleGathering(enabled: boolean) {
+  togglingGathering.value = true;
+  try {
+    const response = await weatherApi.setGatheringEnabled(enabled);
+    if (response.success) {
+      gatheringEnabled.value = enabled;
+      $q.notify({
+        type: 'positive',
+        message: response.data?.message || `자동 수집이 ${enabled ? '활성화' : '비활성화'}되었습니다`
+      });
+    } else {
+      // Revert toggle on error
+      gatheringEnabled.value = !enabled;
+      throw new Error(response.error || '설정 변경 실패');
+    }
+  } catch (error: any) {
+    $q.notify({
+      type: 'negative',
+      message: '설정 변경 실패: ' + (error.message || error)
+    });
+  } finally {
+    togglingGathering.value = false;
+  }
+}
+
 onMounted(() => {
   // Load images with default date range (2 weeks ago to today)
   loadImages();
   loadStatus();
+  loadGatheringStatus();
 });
 </script>
 

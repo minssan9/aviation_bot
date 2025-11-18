@@ -10,6 +10,7 @@ class AviationBotScheduler {
     this.telegramBotService = telegramBotService;
     this.weatherService = weatherService;
     this.jobs = [];
+    this.weatherGatheringEnabled = true; // Default to enabled
   }
 
   /**
@@ -131,6 +132,11 @@ class AviationBotScheduler {
    * @private
    */
   async _collectWeatherImages() {
+    if (!this.weatherGatheringEnabled) {
+      console.log('⏸️  Weather image gathering is disabled, skipping collection');
+      return;
+    }
+    
     try {
       if (this.weatherService) {
         // First, try syncing missing images from the list API (recent 24 timestamps)
@@ -275,6 +281,23 @@ class AviationBotScheduler {
         error: error.message
       };
     }
+  }
+
+  /**
+   * Get weather gathering enabled status
+   * @returns {boolean} Whether weather gathering is enabled
+   */
+  getWeatherGatheringEnabled() {
+    return this.weatherGatheringEnabled;
+  }
+
+  /**
+   * Set weather gathering enabled status
+   * @param {boolean} enabled - Whether to enable weather gathering
+   */
+  setWeatherGatheringEnabled(enabled) {
+    this.weatherGatheringEnabled = enabled;
+    console.log(`🔄 Weather gathering ${enabled ? 'enabled' : 'disabled'}`);
   }
 }
 

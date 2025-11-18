@@ -16,6 +16,8 @@ class AdminServer {
     this.topicService = applicationFactory.getContainer().resolve('topicService');
     // Get weather service from the new architecture
     this.weatherImageService = applicationFactory.getContainer().resolve('weatherService');
+    // Get scheduler service
+    this.scheduler = applicationFactory.getService('schedulingService');
     this.backupDir = path.join(__dirname, '../../data/backups');
     
     this.setupMiddleware();
@@ -497,6 +499,68 @@ class AdminServer {
         });
       } catch (error) {
         console.error('이미지 정리 API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // Weather gathering enabled status
+    this.app.get('/api/weather/gathering/enabled', async (req, res) => {
+      try {
+        if (!this.scheduler) {
+          return res.status(503).json({
+            success: false,
+            error: 'Scheduler not available'
+          });
+        }
+        
+        const enabled = this.scheduler.getWeatherGatheringEnabled();
+        
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          enabled: enabled
+        });
+      } catch (error) {
+        console.error('Weather gathering status API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // Set weather gathering enabled status
+    this.app.post('/api/weather/gathering/enabled', async (req, res) => {
+      try {
+        if (!this.scheduler) {
+          return res.status(503).json({
+            success: false,
+            error: 'Scheduler not available'
+          });
+        }
+        
+        const { enabled } = req.body;
+        
+        if (typeof enabled !== 'boolean') {
+          return res.status(400).json({
+            success: false,
+            error: 'enabled must be a boolean value'
+          });
+        }
+        
+        this.scheduler.setWeatherGatheringEnabled(enabled);
+        
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          enabled: enabled,
+          message: `Weather gathering ${enabled ? 'enabled' : 'disabled'}`
+        });
+      } catch (error) {
+        console.error('Weather gathering toggle API 오류:', error);
         res.status(500).json({
           success: false,
           error: error.message

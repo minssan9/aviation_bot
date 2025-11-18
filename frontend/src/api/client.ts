@@ -92,6 +92,16 @@ export const weatherApi = {
   cleanup: async (daysToKeep = 7): Promise<ApiResponse<{ deletedCount: number }>> => {
     const response = await apiClient.post<ApiResponse<{ deletedCount: number }>>('/weather/cleanup', { daysToKeep });
     return response.data;
+  },
+
+  getGatheringEnabled: async (): Promise<ApiResponse<{ enabled: boolean }>> => {
+    const response = await apiClient.get<ApiResponse<{ enabled: boolean }>>('/weather/gathering/enabled');
+    return response.data;
+  },
+
+  setGatheringEnabled: async (enabled: boolean): Promise<ApiResponse<{ enabled: boolean; message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ enabled: boolean; message: string }>>('/weather/gathering/enabled', { enabled });
+    return response.data;
   }
 };
 
