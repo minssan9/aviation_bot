@@ -7,6 +7,7 @@ This directory contains the nginx reverse proxy configuration for routing multip
 - **Multi-domain routing**: Routes traffic based on domain name
   - `aviation-bott.com` → Aviation Bot application
   - `en9door.com` → En9door application
+  - `workschd.com` → Work Schedule application
 - **SSL/TLS termination**: Handles HTTPS with Let's Encrypt certificates
 - **Rate limiting**: Protects against DoS attacks
 - **Security headers**: Adds security-related HTTP headers
@@ -20,6 +21,9 @@ Routes to the Aviation Bot application (port 3010)
 ### en9door.com
 Routes to the En9door application (update upstream configuration as needed)
 
+### workschd.com
+Routes to the Work Schedule application (update upstream configuration as needed)
+
 ## SSL Certificate Setup
 
 Before deploying, you need to obtain SSL certificates:
@@ -32,6 +36,9 @@ certbot certonly --standalone -d aviation-bott.com -d www.aviation-bott.com
 
 # For en9door.com
 certbot certonly --standalone -d en9door.com -d www.en9door.com
+
+# For workschd.com
+certbot certonly --standalone -d workschd.com -d www.workschd.com
 ```
 
 ### Using Docker Compose with Certbot
@@ -56,6 +63,10 @@ upstream aviation_bot {
 
 upstream en9door {
     server en9door-app:PORT;  # Update this
+}
+
+upstream workschd {
+    server workschd-app:PORT;  # Update this
 }
 ```
 

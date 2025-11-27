@@ -16,9 +16,13 @@ Internet
     │           ├── Admin Server (Port 3011)
     │           └── Scheduler
     │
-    └── en9door.com (HTTPS)
+    ├── en9door.com (HTTPS)
+    │   └── Nginx Gateway (Port 443)
+    │       └── En9door App (Port TBD)
+    │
+    └── workschd.com (HTTPS)
         └── Nginx Gateway (Port 443)
-            └── En9door App (Port TBD)
+            └── Work Schedule App (Port TBD)
 ```
 
 ## 사전 요구사항
@@ -30,6 +34,7 @@ Internet
 - 도메인 DNS 설정:
   - `aviation-bott.com` → Droplet IP
   - `en9door.com` → Droplet IP
+  - `workschd.com` → Droplet IP
 
 ### 2. GitHub Secrets 설정
 
@@ -92,6 +97,14 @@ sudo certbot certonly --standalone \
 sudo certbot certonly --standalone \
   -d en9door.com \
   -d www.en9door.com \
+  --email your-email@example.com \
+  --agree-tos \
+  --non-interactive
+
+# 인증서 발급 (workschd.com)
+sudo certbot certonly --standalone \
+  -d workschd.com \
+  -d www.workschd.com \
   --email your-email@example.com \
   --agree-tos \
   --non-interactive
