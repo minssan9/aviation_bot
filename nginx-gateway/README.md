@@ -8,10 +8,24 @@ This directory contains the nginx reverse proxy configuration for routing multip
   - `aviation-bott.com` → Aviation Bot application
   - `en9door.com` → En9door application
   - `workschd.com` → Work Schedule application
-- **SSL/TLS termination**: Handles HTTPS with Let's Encrypt certificates
+- **SSL/TLS termination**: Handled by Digital Ocean Load Balancer
+- **Health checks**: Upstream server health monitoring with automatic failover
+- **Error handling**: Custom 503 error pages with automatic retry
 - **Rate limiting**: Protects against DoS attacks
 - **Security headers**: Adds security-related HTTP headers
 - **Gzip compression**: Reduces bandwidth usage
+
+## Architecture
+
+```
+Internet → Digital Ocean Load Balancer (HTTPS/SSL) → Nginx Gateway (HTTP) → Backend Services
+```
+
+The nginx gateway operates behind a Digital Ocean Load Balancer which handles:
+- SSL/TLS termination
+- DDoS protection
+- Traffic distribution
+- Health checks
 
 ## Domains
 
@@ -24,31 +38,23 @@ Routes to the En9door application (update upstream configuration as needed)
 ### workschd.com
 Routes to the Work Schedule application (update upstream configuration as needed)
 
-## SSL Certificate Setup
+## Health Checks & Failover
 
-Before deploying, you need to obtain SSL certificates:
+### Upstream Health Checks
+Each upstream server is monitored:
+- **max_fails**: 3 failed attempts before marking as down
+- **fail_timeout**: 30 seconds before retrying
+- Automatic failover to backup servers (if configured)
 
-### Using Certbot (Manual)
+### Gateway Health Check
+- Endpoint: `/health`
+- Returns: `200 OK` with "healthy" message
+- Used by Digital Ocean LB for health monitoring
 
-```bash
-# For aviation-bott.com
-certbot certonly --standalone -d aviation-bott.com -d www.aviation-bott.com
-
-# For en9door.com
-certbot certonly --standalone -d en9door.com -d www.en9door.com
-
-# For workschd.com
-certbot certonly --standalone -d workschd.com -d www.workschd.com
-```
-
-### Using Docker Compose with Certbot
-
-The nginx gateway can be deployed with certbot for automatic certificate renewal:
-
-```bash
-cd nginx-gateway
-docker-compose up -d
-```
+### Error Handling
+- **502/503/504 errors**: Automatically try next upstream server
+- **Custom error page**: User-friendly 503 page with retry button
+- **proxy_next_upstream**: Automatic failover on errors
 
 ## Configuration
 

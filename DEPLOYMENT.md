@@ -7,34 +7,60 @@
 ## 아키텍처
 
 ```
-Internet
+Internet (HTTPS)
     │
-    ├── aviation-bott.com (HTTPS)
-    │   └── Nginx Gateway (Port 443)
-    │       └── Aviation Bot App (Port 3010)
-    │           ├── Telegram Bot Service
-    │           ├── Admin Server (Port 3011)
-    │           └── Scheduler
+    ├── Digital Ocean Load Balancer (SSL/TLS 종료)
+    │   ├── Health Checks
+    │   ├── DDoS Protection
+    │   └── Traffic Distribution
     │
-    ├── en9door.com (HTTPS)
-    │   └── Nginx Gateway (Port 443)
-    │       └── En9door App (Port TBD)
+    ├── Nginx Gateway (Port 80)
+    │   ├── Multi-domain Routing
+    │   ├── Rate Limiting
+    │   ├── Upstream Health Checks
+    │   └── Error Handling
     │
-    └── workschd.com (HTTPS)
-        └── Nginx Gateway (Port 443)
-            └── Work Schedule App (Port TBD)
+    ├── aviation-bott.com
+    │   └── Aviation Bot App (Port 3010)
+    │       ├── Telegram Bot Service
+    │       ├── Admin Server (Port 3011)
+    │       └── Scheduler
+    │
+    ├── en9door.com
+    │   └── En9door App (Port TBD)
+    │
+    └── workschd.com
+        └── Work Schedule App (Port TBD)
 ```
 
 ## 사전 요구사항
 
 ### 1. Digital Ocean 설정
 
-- Droplet 생성 (Ubuntu 22.04 LTS 권장)
+**Droplet 생성**
+- Ubuntu 22.04 LTS 권장
 - 최소 2GB RAM, 2 vCPU
-- 도메인 DNS 설정:
-  - `aviation-bott.com` → Droplet IP
-  - `en9door.com` → Droplet IP
-  - `workschd.com` → Droplet IP
+
+**Load Balancer 생성**
+- 알고리즘: Round Robin 또는 Least Connections
+- Health Check:
+  - Protocol: HTTP
+  - Port: 80
+  - Path: `/health`
+  - Check interval: 10s
+  - Response timeout: 5s
+  - Unhealthy threshold: 3
+  - Healthy threshold: 5
+- SSL/TLS:
+  - Let's Encrypt 인증서 자동 발급
+  - 도메인: `aviation-bott.com`, `en9door.com`, `workschd.com`
+  - HTTP → HTTPS 리다이렉트 활성화
+
+**도메인 DNS 설정**
+- `aviation-bott.com` → Load Balancer IP
+- `en9door.com` → Load Balancer IP
+- `workschd.com` → Load Balancer IP
+- Droplet은 프라이빗 네트워크로만 접근 (선택사항)
 
 ### 2. GitHub Secrets 설정
 
@@ -77,43 +103,27 @@ cp .env.example /data/devops/.env
 # .env 파일 편집하여 환경 변수 설정
 ```
 
-## SSL 인증서 설정
+## Upstream 서버 Health Check
 
-### Let's Encrypt 인증서 발급
+Nginx는 upstream 서버의 상태를 자동으로 모니터링합니다:
 
-```bash
-# Certbot 설치
-sudo apt-get install certbot
-
-# 인증서 발급 (aviation-bott.com)
-sudo certbot certonly --standalone \
-  -d aviation-bott.com \
-  -d www.aviation-bott.com \
-  --email your-email@example.com \
-  --agree-tos \
-  --non-interactive
-
-# 인증서 발급 (en9door.com)
-sudo certbot certonly --standalone \
-  -d en9door.com \
-  -d www.en9door.com \
-  --email your-email@example.com \
-  --agree-tos \
-  --non-interactive
-
-# 인증서 발급 (workschd.com)
-sudo certbot certonly --standalone \
-  -d workschd.com \
-  -d www.workschd.com \
-  --email your-email@example.com \
-  --agree-tos \
-  --non-interactive
-
-# 자동 갱신 설정
-sudo certbot renew --dry-run
+```nginx
+upstream aviation_bot {
+    server app:3010 max_fails=3 fail_timeout=30s;
+    # 백업 서버 (선택사항)
+    # server backup-app:3010 backup;
+}
 ```
 
-인증서는 `/etc/letsencrypt/live/` 디렉토리에 저장됩니다.
+**Health Check 설정**
+- `max_fails=3`: 3회 실패 시 서버를 다운으로 표시
+- `fail_timeout=30s`: 30초 후 재시도
+- `backup`: 메인 서버 다운시 사용할 백업 서버
+
+**에러 처리**
+- 502/503/504 에러 발생시 자동으로 다음 서버로 요청 전달
+- 모든 서버 다운시 사용자 친화적인 503 에러 페이지 표시
+- 에러 페이지에서 자동 재시도 버튼 제공
 
 ## 배포 방법
 
@@ -192,11 +202,15 @@ docker exec -it aviation-bot-nginx-gateway-1 tail -f /var/log/nginx/error.log
 # 서비스 상태 확인
 docker-compose -f deployment/docker-compose.prod.yml ps
 
+# Nginx Gateway 헬스 체크 (Digital Ocean LB가 사용)
+curl http://localhost:80/health
+# 응답: healthy
+
 # 애플리케이션 헬스 체크
 curl http://localhost:3010/health
 
-# Nginx 상태 확인
-curl -I http://localhost:80
+# Load Balancer를 통한 외부 헬스 체크
+curl https://aviation-bott.com/health
 ```
 
 ## 트러블슈팅
@@ -214,18 +228,23 @@ docker-compose -f deployment/docker-compose.prod.yml logs
 docker-compose -f deployment/docker-compose.prod.yml restart
 ```
 
-### SSL 인증서 오류
+### Load Balancer 연결 오류
 
 ```bash
-# 인증서 확인
-sudo certbot certificates
+# Nginx 게이트웨이 로그 확인
+docker logs aviation-bot-nginx-gateway-1
 
-# 수동 갱신
-sudo certbot renew
+# Health check 엔드포인트 테스트
+curl -v http://localhost:80/health
 
 # Nginx 재시작
 docker-compose -f deployment/docker-compose.prod.yml restart nginx-gateway
 ```
+
+**Digital Ocean Load Balancer 확인**
+- Load Balancer 대시보드에서 Health Status 확인
+- Droplet이 "Healthy" 상태인지 확인
+- Health Check 설정 (경로: `/health`, 포트: 80) 확인
 
 ### 데이터베이스 연결 오류
 
@@ -269,11 +288,22 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ## 보안
 
-- 모든 HTTP 트래픽은 HTTPS로 리다이렉트
+**Digital Ocean Load Balancer**
+- SSL/TLS 종료 (Let's Encrypt 자동 갱신)
+- HTTP → HTTPS 자동 리다이렉트
+- DDoS 보호
 - TLS 1.2 이상만 허용
-- Rate limiting 적용 (일반: 10req/s, API: 30req/s)
-- Security headers 적용 (HSTS, X-Frame-Options, etc.)
+
+**Nginx Gateway**
+- Upstream 서버 Health Check 및 자동 Failover
+- Rate limiting (일반: 10req/s, API: 30req/s)
+- Security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection)
+- 요청 크기 제한 (10MB)
+
+**애플리케이션**
 - 민감한 정보는 환경 변수로 관리
+- 데이터베이스 접근 제한
+- 로그 rotation (최대 10MB, 3개 파일)
 
 ## 성능 최적화
 
