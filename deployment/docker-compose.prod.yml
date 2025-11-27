@@ -1,6 +1,30 @@
 version: "3.9"
 
 services:
+  # Nginx reverse proxy gateway
+  nginx-gateway:
+    build:
+      context: ../nginx-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - aviation-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Aviation Bot application
   app:
     image: ghcr.io/${GITHUB_REPOSITORY}:latest
     environment:
@@ -13,10 +37,12 @@ services:
       - DB_USER=${DB_USER:-aviation}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME:-aviation_bot}
+      - ADMIN_PORT=3011
     env_file:
       - /data/devops/.env
-    ports:
-      - "3010:3010"
+    expose:
+      - "3010"
+      - "3011"
     restart: unless-stopped
     networks:
       - aviation-network
@@ -27,6 +53,9 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+volumes:
+  nginx-logs:
 
 networks:
   aviation-network:

@@ -3,6 +3,7 @@ import Dashboard from '../views/Dashboard.vue';
 import TopicsManagement from '../views/TopicsManagement.vue';
 import WeatherManagement from '../views/WeatherManagement.vue';
 import BackupsManagement from '../views/BackupsManagement.vue';
+import BatchManagement from '../views/BatchManagement.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,6 +22,11 @@ const router = createRouter({
       path: '/weather',
       name: 'weather',
       component: WeatherManagement
+    },
+    {
+      path: '/batch',
+      name: 'batch',
+      component: BatchManagement
     },
     {
       path: '/backups',

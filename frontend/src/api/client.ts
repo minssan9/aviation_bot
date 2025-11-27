@@ -105,3 +105,25 @@ export const weatherApi = {
   }
 };
 
+export const batchApi = {
+  getStatus: async (): Promise<ApiResponse<{ batches: Record<string, boolean> }>> => {
+    const response = await apiClient.get<ApiResponse<{ batches: Record<string, boolean> }>>('/batch/status');
+    return response.data;
+  },
+
+  setBatchEnabled: async (batchName: string, enabled: boolean): Promise<ApiResponse<{ batchName: string; enabled: boolean; message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ batchName: string; enabled: boolean; message: string }>>(`/batch/${batchName}/enabled`, { enabled });
+    return response.data;
+  },
+
+  enableAll: async (): Promise<ApiResponse<{ message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>('/batch/enable-all');
+    return response.data;
+  },
+
+  disableAll: async (): Promise<ApiResponse<{ message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>('/batch/disable-all');
+    return response.data;
+  }
+};
+

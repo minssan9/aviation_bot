@@ -10,7 +10,18 @@ class AviationBotScheduler {
     this.telegramBotService = telegramBotService;
     this.weatherService = weatherService;
     this.jobs = [];
-    this.weatherGatheringEnabled = true; // Default to enabled
+
+    // Batch control flags
+    this.batchEnabled = {
+      morningKnowledge: true,
+      afternoonKnowledge: true,
+      eveningKnowledge: true,
+      weatherCollection: true,
+      weatherCleanup: true
+    };
+
+    // Legacy compatibility
+    this.weatherGatheringEnabled = true;
   }
 
   /**
@@ -118,6 +129,13 @@ class AviationBotScheduler {
    * @private
    */
   async _sendAviationKnowledgeNotification(timeSlot) {
+    // Check if this batch is enabled
+    const batchKey = `${timeSlot}Knowledge`;
+    if (!this.batchEnabled[batchKey]) {
+      console.log(`⏸️  ${timeSlot} knowledge notification is disabled, skipping`);
+      return;
+    }
+
     try {
       // This would integrate with the message generator
       console.log(`📚 Sending ${timeSlot} aviation knowledge notification`);
@@ -132,11 +150,12 @@ class AviationBotScheduler {
    * @private
    */
   async _collectWeatherImages() {
-    if (!this.weatherGatheringEnabled) {
+    // Check both legacy flag and new batch control
+    if (!this.weatherGatheringEnabled || !this.batchEnabled.weatherCollection) {
       console.log('⏸️  Weather image gathering is disabled, skipping collection');
       return;
     }
-    
+
     try {
       if (this.weatherService) {
         // First, try syncing missing images from the list API (recent 24 timestamps)
@@ -163,6 +182,12 @@ class AviationBotScheduler {
    * @private
    */
   async _cleanupWeatherImages() {
+    // Check if cleanup batch is enabled
+    if (!this.batchEnabled.weatherCleanup) {
+      console.log('⏸️  Weather cleanup is disabled, skipping');
+      return;
+    }
+
     try {
       if (this.weatherService) {
         const result = await this.weatherService.cleanupOldImages(7); // Keep 7 days
@@ -297,7 +322,67 @@ class AviationBotScheduler {
    */
   setWeatherGatheringEnabled(enabled) {
     this.weatherGatheringEnabled = enabled;
+    // Also update new batch control
+    this.batchEnabled.weatherCollection = enabled;
     console.log(`🔄 Weather gathering ${enabled ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
+   * Get all batch enabled status
+   * @returns {Object} Batch enabled status for all batches
+   */
+  getBatchStatus() {
+    return {
+      morningKnowledge: this.batchEnabled.morningKnowledge,
+      afternoonKnowledge: this.batchEnabled.afternoonKnowledge,
+      eveningKnowledge: this.batchEnabled.eveningKnowledge,
+      weatherCollection: this.batchEnabled.weatherCollection,
+      weatherCleanup: this.batchEnabled.weatherCleanup
+    };
+  }
+
+  /**
+   * Set batch enabled status
+   * @param {string} batchName - Name of the batch (morningKnowledge, afternoonKnowledge, etc.)
+   * @param {boolean} enabled - Whether to enable the batch
+   */
+  setBatchEnabled(batchName, enabled) {
+    if (this.batchEnabled.hasOwnProperty(batchName)) {
+      this.batchEnabled[batchName] = enabled;
+      console.log(`🔄 Batch ${batchName} ${enabled ? 'enabled' : 'disabled'}`);
+
+      // Update legacy flag if weather collection is changed
+      if (batchName === 'weatherCollection') {
+        this.weatherGatheringEnabled = enabled;
+      }
+
+      return true;
+    } else {
+      console.warn(`⚠️  Unknown batch name: ${batchName}`);
+      return false;
+    }
+  }
+
+  /**
+   * Enable all batches
+   */
+  enableAllBatches() {
+    Object.keys(this.batchEnabled).forEach(key => {
+      this.batchEnabled[key] = true;
+    });
+    this.weatherGatheringEnabled = true;
+    console.log('🔄 All batches enabled');
+  }
+
+  /**
+   * Disable all batches
+   */
+  disableAllBatches() {
+    Object.keys(this.batchEnabled).forEach(key => {
+      this.batchEnabled[key] = false;
+    });
+    this.weatherGatheringEnabled = false;
+    console.log('🔄 All batches disabled');
   }
 }
 

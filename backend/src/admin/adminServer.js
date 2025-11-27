@@ -506,7 +506,132 @@ class AdminServer {
       }
     });
 
-    // Weather gathering enabled status
+    // === Batch Management API ===
+
+    // Get all batch status
+    this.app.get('/api/batch/status', async (req, res) => {
+      try {
+        if (!this.scheduler) {
+          return res.status(503).json({
+            success: false,
+            error: 'Scheduler not available'
+          });
+        }
+
+        const batchStatus = this.scheduler.getBatchStatus();
+
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          batches: batchStatus
+        });
+      } catch (error) {
+        console.error('Batch status API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // Set batch enabled status
+    this.app.post('/api/batch/:batchName/enabled', async (req, res) => {
+      try {
+        if (!this.scheduler) {
+          return res.status(503).json({
+            success: false,
+            error: 'Scheduler not available'
+          });
+        }
+
+        const { batchName } = req.params;
+        const { enabled } = req.body;
+
+        if (typeof enabled !== 'boolean') {
+          return res.status(400).json({
+            success: false,
+            error: 'enabled must be a boolean value'
+          });
+        }
+
+        const result = this.scheduler.setBatchEnabled(batchName, enabled);
+
+        if (!result) {
+          return res.status(400).json({
+            success: false,
+            error: `Unknown batch name: ${batchName}`
+          });
+        }
+
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          batchName: batchName,
+          enabled: enabled,
+          message: `Batch ${batchName} ${enabled ? 'enabled' : 'disabled'}`
+        });
+      } catch (error) {
+        console.error('Batch toggle API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // Enable all batches
+    this.app.post('/api/batch/enable-all', async (req, res) => {
+      try {
+        if (!this.scheduler) {
+          return res.status(503).json({
+            success: false,
+            error: 'Scheduler not available'
+          });
+        }
+
+        this.scheduler.enableAllBatches();
+
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          message: 'All batches enabled'
+        });
+      } catch (error) {
+        console.error('Enable all batches API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // Disable all batches
+    this.app.post('/api/batch/disable-all', async (req, res) => {
+      try {
+        if (!this.scheduler) {
+          return res.status(503).json({
+            success: false,
+            error: 'Scheduler not available'
+          });
+        }
+
+        this.scheduler.disableAllBatches();
+
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          message: 'All batches disabled'
+        });
+      } catch (error) {
+        console.error('Disable all batches API 오류:', error);
+        res.status(500).json({
+          success: false,
+          error: error.message
+        });
+      }
+    });
+
+    // Weather gathering enabled status (legacy compatibility)
     this.app.get('/api/weather/gathering/enabled', async (req, res) => {
       try {
         if (!this.scheduler) {
@@ -515,9 +640,9 @@ class AdminServer {
             error: 'Scheduler not available'
           });
         }
-        
+
         const enabled = this.scheduler.getWeatherGatheringEnabled();
-        
+
         res.json({
           success: true,
           timestamp: new Date().toISOString(),

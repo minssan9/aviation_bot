@@ -81,15 +81,23 @@ jobs:
         script: |
           cd /data/devops/aviation-bot
 
+          # Pull latest code (for nginx-gateway and docker-compose files)
+          git pull origin main || echo "Git pull failed, continuing with existing code"
+
           # Login to GitHub Container Registry
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-          # Pull latest image
+          # Pull latest application image
           docker pull ghcr.io/${{ github.repository }}:latest
 
-          # Deploy using docker-compose from /data/devops
-          docker-compose down || true
-          docker-compose up -d
+          # Deploy using docker-compose
+          cd deployment
+          docker-compose -f docker-compose.prod.yml down || true
+          docker-compose -f docker-compose.prod.yml build nginx-gateway
+          docker-compose -f docker-compose.prod.yml up -d
 
           # Show status
-          docker-compose ps
+          docker-compose -f docker-compose.prod.yml ps
+
+          # Show logs for verification
+          docker-compose -f docker-compose.prod.yml logs --tail=50

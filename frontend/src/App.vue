@@ -71,6 +71,19 @@
         <q-item
           clickable
           v-ripple
+          :active="$route.name === 'batch'"
+          @click="$router.push({ name: 'batch' })"
+        >
+          <q-item-section avatar>
+            <q-icon name="schedule" />
+          </q-item-section>
+          <q-item-section>
+            <q-item-label>배치 관리</q-item-label>
+          </q-item-section>
+        </q-item>
+        <q-item
+          clickable
+          v-ripple
           :active="$route.name === 'backups'"
           @click="$router.push({ name: 'backups' })"
         >
