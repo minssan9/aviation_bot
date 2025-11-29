@@ -12,7 +12,9 @@ CREATE TABLE IF NOT EXISTS message_logs (
     telegram_message_id BIGINT DEFAULT NULL COMMENT 'Telegram message ID if successful',
     processing_time_ms INT DEFAULT NULL COMMENT 'Message processing time in milliseconds',
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'When message was sent/attempted',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Log entry creation time'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Log entry creation time',
+    CONSTRAINT fk_message_logs_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_message_logs_quiz_id FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB 
   DEFAULT CHARSET=utf8mb4 
   COLLATE=utf8mb4_unicode_ci 
@@ -29,14 +31,3 @@ CREATE INDEX idx_message_logs_hash ON message_logs(content_hash);
 -- Composite indexes for common queries
 CREATE INDEX idx_message_logs_user_status ON message_logs(user_id, status);
 CREATE INDEX idx_message_logs_type_date ON message_logs(message_type, sent_at);
-
--- Foreign key constraints
-ALTER TABLE message_logs 
-ADD CONSTRAINT fk_message_logs_user_id 
-FOREIGN KEY (user_id) REFERENCES users(id) 
-ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE message_logs 
-ADD CONSTRAINT fk_message_logs_quiz_id 
-FOREIGN KEY (quiz_id) REFERENCES quizzes(id) 
-ON DELETE SET NULL ON UPDATE CASCADE;

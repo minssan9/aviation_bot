@@ -7,7 +7,7 @@
 ```
 /opt/aviation-bot/
 ├── .env                        # 환경변수 설정 파일
-├── docker-compose.prod.yml     # 프로덕션 Docker Compose 설정
+├── docker-compose.yml     # 프로덕션 Docker Compose 설정
 ├── init.sql                    # 데이터베이스 초기화 스크립트
 ├── deploy.sh                   # 배포 스크립트
 └── data/                       # 데이터 볼륨 (자동 생성)
@@ -30,7 +30,7 @@ cd /opt/aviation-bot
 
 ```bash
 # 방법 1: 개별 파일 다운로드
-curl -O https://raw.githubusercontent.com/your-username/aviation-bot/main/deployment/docker-compose.prod.yml
+curl -O https://raw.githubusercontent.com/your-username/aviation-bot/main/deployment/docker-compose.yml
 curl -O https://raw.githubusercontent.com/your-username/aviation-bot/main/deployment/init.sql
 curl -O https://raw.githubusercontent.com/your-username/aviation-bot/main/deployment/deploy.sh
 curl -O https://raw.githubusercontent.com/your-username/aviation-bot/main/deployment/.env.example
@@ -62,11 +62,11 @@ GEMINI_API_KEY=your_gemini_api_key_here
 CLAUDE_API_KEY=your_claude_api_key_here
 
 # Database Configuration
-DB_HOST=db
-DB_PORT=3306
-DB_USER=aviation
-DB_PASSWORD=your_secure_password_here
-DB_NAME=aviation_bot
+DATABASE_HOST=db
+DATABASE_PORT=3306
+DATABASE_USER=aviation
+DATABASE_PASSWORD=your_secure_password_here
+DATABASE_NAME=aviation_bot
 
 # GitHub Container Registry
 GITHUB_REPOSITORY=your_username/aviation-bot
@@ -111,9 +111,9 @@ BOT_TOKEN=your_telegram_bot_token
 GEMINI_API_KEY=your_gemini_api_key
 CLAUDE_API_KEY=your_claude_api_key
 
-DB_USER=aviation
-DB_PASSWORD=your_secure_password
-DB_NAME=aviation_bot
+DATABASE_USER=aviation
+DATABASE_PASSWORD=your_secure_password
+DATABASE_NAME=aviation_bot
 ```
 
 ### 자동 배포 과정
@@ -132,7 +132,7 @@ DB_NAME=aviation_bot
 cd /opt/aviation-bot
 
 # GitHub에서 최신 배포 파일 다운로드
-curl -O https://raw.githubusercontent.com/your-username/aviation-bot/main/docker-compose.prod.yml
+curl -O https://raw.githubusercontent.com/your-username/aviation-bot/main/docker-compose.yml
 curl -O https://raw.githubusercontent.com/your-username/aviation-bot/main/init.sql
 curl -O https://raw.githubusercontent.com/your-username/aviation-bot/main/deploy.sh
 
@@ -151,38 +151,38 @@ chmod +x deploy.sh
 
 ```bash
 cd /opt/aviation-bot
-docker-compose -f docker-compose.prod.yml ps
+docker-compose -f docker-compose.yml ps
 ```
 
 ### 로그 확인
 
 ```bash
 # 전체 로그
-docker-compose -f docker-compose.prod.yml logs
+docker-compose -f docker-compose.yml logs
 
 # 실시간 로그 팔로우
-docker-compose -f docker-compose.prod.yml logs -f
+docker-compose -f docker-compose.yml logs -f
 
 # 특정 서비스 로그
-docker-compose -f docker-compose.prod.yml logs app
-docker-compose -f docker-compose.prod.yml logs db
+docker-compose -f docker-compose.yml logs app
+docker-compose -f docker-compose.yml logs db
 ```
 
 ### 서비스 재시작
 
 ```bash
 # 전체 재시작
-docker-compose -f docker-compose.prod.yml restart
+docker-compose -f docker-compose.yml restart
 
 # 특정 서비스만 재시작
-docker-compose -f docker-compose.prod.yml restart app
+docker-compose -f docker-compose.yml restart app
 ```
 
 ### 백업
 
 ```bash
 # 데이터베이스 백업
-docker-compose -f docker-compose.prod.yml exec db mysqldump -u aviation -p aviation_bot > backup_$(date +%Y%m%d_%H%M%S).sql
+docker-compose -f docker-compose.yml exec db mysqldump -u aviation -p aviation_bot > backup_$(date +%Y%m%d_%H%M%S).sql
 
 # 환경설정 백업
 cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
@@ -194,13 +194,13 @@ cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
 
 1. **컨테이너가 시작되지 않는 경우**
    ```bash
-   docker-compose -f docker-compose.prod.yml logs
+   docker-compose -f docker-compose.yml logs
    ```
 
 2. **데이터베이스 연결 실패**
    ```bash
    # 데이터베이스 헬스체크 확인
-   docker-compose -f docker-compose.prod.yml exec db mysqladmin ping -h localhost -u root -p
+   docker-compose -f docker-compose.yml exec db mysqladmin ping -h localhost -u root -p
    ```
 
 3. **디스크 공간 부족**

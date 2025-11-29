@@ -10,16 +10,16 @@ class Config {
     this.CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
     
     // Database Configuration
-    this.DB_HOST = process.env.DB_HOST || 'localhost';
-    this.DB_PORT = parseInt(process.env.DB_PORT) || 3306;
-    this.DB_USER = process.env.DB_USER || 'root';
-    this.DB_PASSWORD = process.env.DB_PASSWORD || 'admin';
-    this.DB_NAME = process.env.DB_NAME || 'voyagerss';
+    this.DATABASE_HOST = process.env.DATABASE_HOST || 'localhost';
+    this.DATABASE_PORT = parseInt(process.env.DATABASE_PORT) || 3306;
+    this.DATABASE_USER = process.env.DATABASE_USER || 'root';
+    this.DATABASE_PASSWORD = process.env.DATABASE_PASSWORD || 'admin';
+    this.DATABASE_NAME = process.env.DATABASE_NAME || 'voyagerss';
     
     // Database Options - MySQL2 compatible
-    this.DB_CONNECTION_LIMIT = parseInt(process.env.DB_CONNECTION_LIMIT) || 10;
-    this.DB_ACQUIRE_TIMEOUT_MILLIS = parseInt(process.env.DB_ACQUIRE_TIMEOUT_MILLIS) || 60000;
-    this.DB_CONNECT_TIMEOUT = parseInt(process.env.DB_CONNECT_TIMEOUT) || 60000;
+    this.DATABASE_CONNECTION_LIMIT = parseInt(process.env.DATABASE_CONNECTION_LIMIT) || 10;
+    this.DATABASE_ACQUIRE_TIMEOUT_MILLIS = parseInt(process.env.DATABASE_ACQUIRE_TIMEOUT_MILLIS) || 60000;
+    this.DATABASE_CONNECT_TIMEOUT = parseInt(process.env.DATABASE_CONNECT_TIMEOUT) || 60000;
     
     // Environment
     this.NODE_ENV = process.env.NODE_ENV || 'development';
@@ -44,8 +44,8 @@ class Config {
     }
 
     // Database validation
-    if (!this.DB_PASSWORD && this.NODE_ENV === 'production') {
-      console.warn('⚠️ DB_PASSWORD not set - this may cause connection issues in production');
+    if (!this.DATABASE_PASSWORD && this.NODE_ENV === 'production') {
+      console.warn('⚠️ DATABASE_PASSWORD not set - this may cause connection issues in production');
     }
 
     // Log configuration
@@ -54,7 +54,7 @@ class Config {
     if (this.CLAUDE_API_KEY) providers.push('Anthropic');
     
     console.log(`🔑 AI Providers: ${providers.join(', ')}`);
-    console.log(`🗄️ Database: ${this.DB_HOST}:${this.DB_PORT}/${this.DB_NAME}`);
+    console.log(`🗄️ Database: ${this.DATABASE_HOST}:${this.DATABASE_PORT}/${this.DATABASE_NAME}`);
   }
 
   getConfig() {
@@ -67,17 +67,17 @@ class Config {
       CLAUDE_API_KEY: this.CLAUDE_API_KEY,
       
       // Database Configuration
-      DB_HOST: this.DB_HOST,
-      DB_PORT: this.DB_PORT,
-      DB_USER: this.DB_USER,
-      DB_PASSWORD: this.DB_PASSWORD,
-      DB_NAME: this.DB_NAME,
+      DATABASE_HOST: this.DATABASE_HOST,
+      DATABASE_PORT: this.DATABASE_PORT,
+      DATABASE_USER: this.DATABASE_USER,
+      DATABASE_PASSWORD: this.DATABASE_PASSWORD,
+      DATABASE_NAME: this.DATABASE_NAME,
       
       // Database Options - MySQL2 compatible
       dbOptions: {
-        connectionLimit: this.DB_CONNECTION_LIMIT,
-        acquireTimeoutMillis: this.DB_ACQUIRE_TIMEOUT_MILLIS,
-        connectTimeout: this.DB_CONNECT_TIMEOUT
+        connectionLimit: this.DATABASE_CONNECTION_LIMIT,
+        acquireTimeoutMillis: this.DATABASE_ACQUIRE_TIMEOUT_MILLIS,
+        connectTimeout: this.DATABASE_CONNECT_TIMEOUT
       },
       
       // Environment

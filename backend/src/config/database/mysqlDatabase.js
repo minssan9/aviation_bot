@@ -5,15 +5,15 @@ const path = require('path');
 class MySQLDatabase {
   constructor(config) {
     this.config = {
-      host: config.DB_HOST || 'localhost',
-      port: config.DB_PORT || 3306,
-      user: config.DB_USER || 'root',
-      password: config.DB_PASSWORD || '',
-      database: config.DB_NAME || 'aviation_bot',
+      host: config.DATABASE_HOST || 'localhost',
+      port: config.DATABASE_PORT || 3306,
+      user: config.DATABASE_USER || 'root',
+      password: config.DATABASE_PASSWORD || '',
+      database: config.DATABASE_NAME || 'aviation_bot',
       charset: 'utf8mb4',
       timezone: '+00:00'
     };
-    
+
     // MySQL2 compatible pool options
     this.poolOptions = {
       waitForConnections: true,
@@ -22,7 +22,7 @@ class MySQLDatabase {
       connectTimeout: config.dbOptions?.connectTimeout || 60000,
       queueLimit: 0
     };
-    
+
     this.pool = null;
     this.isInitialized = false;
   }
@@ -30,7 +30,7 @@ class MySQLDatabase {
   async initialize() {
     try {
       console.log('🔌 Connecting to MySQL database...');
-      
+
       // Connection pool 생성 (MySQL2 호환 설정)
       this.pool = mysql.createPool({
         ...this.config,
@@ -48,7 +48,7 @@ class MySQLDatabase {
       // 스키마 확인 & 생성
       await this.ensureDatabase();
       await this.runMigrations();
-      
+
     } catch (error) {
       console.error('❌ MySQL connection failed:', error.message);
       throw error;
@@ -63,11 +63,11 @@ class MySQLDatabase {
         database: undefined  // 데이터베이스 지정 안함
       });
 
-      await tempPool.execute(
+      await tempPool.query(
         `CREATE DATABASE IF NOT EXISTS \`${this.config.database}\` 
          CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
       );
-      
+
       await tempPool.end();
       console.log(`✅ Database '${this.config.database}' ensured`);
     } catch (error) {
@@ -78,22 +78,22 @@ class MySQLDatabase {
 
   async runMigrations() {
     try {
-      const migrationsDir = path.join(__dirname, '../migrations');
+      const migrationsDir = path.join(__dirname, '../../migrations-db');
       const migrationFiles = await this.getMigrationFiles(migrationsDir);
-      
+
       // migrations 테이블 생성
       await this.createMigrationsTable();
-      
+
       // 실행된 마이그레이션 조회
       const executedMigrations = await this.getExecutedMigrations();
-      
+
       // 미실행 마이그레이션 실행
       for (const file of migrationFiles) {
         if (!executedMigrations.includes(file)) {
           await this.executeMigration(file, migrationsDir);
         }
       }
-      
+
       console.log('✅ Database migrations completed');
     } catch (error) {
       console.error('❌ Migration failed:', error);
@@ -123,7 +123,7 @@ class MySQLDatabase {
         executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       ) ENGINE=InnoDB
     `;
-    await this.execute(sql);
+    await this.query(sql);
   }
 
   async getExecutedMigrations() {
@@ -138,36 +138,47 @@ class MySQLDatabase {
   async executeMigration(filename, migrationsDir) {
     const filePath = path.join(migrationsDir, filename);
     const sql = await fs.readFile(filePath, 'utf8');
-    
+
     console.log(`🔄 Executing migration: ${filename}`);
-    
+
     // 트랜잭션으로 실행
     const connection = await this.pool.getConnection();
-    
+
     try {
       await connection.beginTransaction();
-      
+
       // SQL 파일 실행 (여러 statements 지원)
       const statements = sql
         .split(';')
         .map(s => s.trim())
         .filter(s => s.length > 0);
-      
+
       for (const statement of statements) {
         if (statement.trim()) {
-          await connection.execute(statement);
+          try {
+            await connection.query(statement);
+          } catch (err) {
+            // Ignore duplicate index/column errors
+            if (err.code === 'ER_DUP_KEYNAME' || err.errno === 1061 ||
+              err.code === 'ER_DUP_FIELDNAME' || err.errno === 1060 ||
+              (err.sqlState === '42000' && err.message.includes('Duplicate key name'))) {
+              console.warn(`⚠️ Ignoring duplicate error: ${err.message}`);
+            } else {
+              throw err;
+            }
+          }
         }
       }
-      
+
       // 마이그레이션 기록
       await connection.execute(
         'INSERT INTO migrations (id) VALUES (?)',
         [filename]
       );
-      
+
       await connection.commit();
       console.log(`✅ Migration completed: ${filename}`);
-      
+
     } catch (error) {
       await connection.rollback();
       console.error(`❌ Migration failed: ${filename}`, error);
@@ -181,9 +192,9 @@ class MySQLDatabase {
     if (!this.pool) {
       throw new Error('Database connection pool not available');
     }
-    
+
     try {
-      return await this.pool.execute(sql, params);
+      return await this.pool.query(sql, params);
     } catch (error) {
       console.error('❌ Query failed:', sql, params, error);
       throw error;
@@ -191,8 +202,17 @@ class MySQLDatabase {
   }
 
   async execute(sql, params = []) {
-    const [result] = await this.query(sql, params);
-    return result;
+    if (!this.pool) {
+      throw new Error('Database connection pool not available');
+    }
+
+    try {
+      const [result] = await this.pool.execute(sql, params);
+      return result;
+    } catch (error) {
+      console.error('❌ Execute failed:', sql, params, error);
+      throw error;
+    }
   }
 
   async get(sql, params = []) {
@@ -207,15 +227,15 @@ class MySQLDatabase {
 
   async transaction(callback) {
     const connection = await this.pool.getConnection();
-    
+
     try {
       await connection.beginTransaction();
-      
+
       const result = await callback(connection);
-      
+
       await connection.commit();
       return result;
-      
+
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -235,7 +255,7 @@ class MySQLDatabase {
     if (!this.pool) {
       return { connected: false, config: this.config };
     }
-    
+
     return {
       connected: this.isInitialized,
       config: {
@@ -258,10 +278,10 @@ class MySQLDatabase {
       await this.query('SELECT 1 as health');
       return { status: 'healthy', timestamp: new Date() };
     } catch (error) {
-      return { 
-        status: 'unhealthy', 
-        error: error.message, 
-        timestamp: new Date() 
+      return {
+        status: 'unhealthy',
+        error: error.message,
+        timestamp: new Date()
       };
     }
   }

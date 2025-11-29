@@ -2,13 +2,11 @@
   "name": "aviation-knowledge-bot",
   "version": "2.0.0",
   "description": "Daily aviation knowledge telegram bot with Google Gemini AI integration",
-  "main": "backend/src/app.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "node backend/src/app.js",
-    "start:prod": "node backend/src/app.js",
-    "dev": "NODE_ENV=development nodemon --watch backend/src --ext js,json --signal SIGTERM backend/src/app.js",
-    "dev:frontend": "cd frontend && npm run dev",
-    "build:frontend": "cd frontend && npm run build",
+    "start": "node src/app.js",
+    "start:prod": "node src/app.js",
+    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext js,json --signal SIGTERM src/app.js",
     "legacy": "node bot.js",
     "docker:build": "docker build -t aviation-bot:latest .",
     "compose:up": "docker compose up -d",
@@ -17,10 +15,13 @@
   "dependencies": {
     "@google/genai": "^1.27.0",
     "@google/generative-ai": "^0.19.0",
+    "@napi-rs/canvas": "^0.1.58",
     "axios": "^1.11.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "moment-timezone": "^0.5.43",
     "multer": "^2.0.2",
     "mysql2": "^3.14.3",
@@ -29,6 +30,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.7"
   }
 }
