@@ -10,7 +10,7 @@
 -- Table: terminals
 -- Description: Airport terminal information (T1, T2, etc.)
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS terminals (
+CREATE TABLE IF NOT EXISTS nav_terminals (
   id VARCHAR(10) PRIMARY KEY,
   name_ko VARCHAR(100) NOT NULL,
   name_en VARCHAR(100) NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS terminals (
 -- Table: floors
 -- Description: Floor information for each terminal
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS floors (
+CREATE TABLE IF NOT EXISTS nav_floors (
   id VARCHAR(20) PRIMARY KEY,
   terminal_id VARCHAR(10) NOT NULL,
   floor_number INT NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS floors (
   map_image_path VARCHAR(500),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (terminal_id) REFERENCES terminals(id) ON DELETE CASCADE,
+  FOREIGN KEY (terminal_id) REFERENCES nav_terminals(id) ON DELETE CASCADE,
   INDEX idx_terminal_floor (terminal_id, floor_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS floors (
 -- Table: waypoints
 -- Description: Navigation nodes (gates, counters, elevators, etc.)
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS waypoints (
+CREATE TABLE IF NOT EXISTS nav_waypoints (
   id VARCHAR(50) PRIMARY KEY,
   terminal_id VARCHAR(10) NOT NULL,
   floor_number INT NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS waypoints (
   is_accessible BOOLEAN DEFAULT TRUE COMMENT 'Wheelchair accessible',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (terminal_id) REFERENCES terminals(id) ON DELETE CASCADE,
+  FOREIGN KEY (terminal_id) REFERENCES nav_terminals(id) ON DELETE CASCADE,
   INDEX idx_type (type),
   INDEX idx_location (terminal_id, floor_number),
   INDEX idx_accessible (is_accessible)
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS waypoints (
 -- Table: waypoint_connections
 -- Description: Graph edges connecting waypoints (for pathfinding)
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS waypoint_connections (
+CREATE TABLE IF NOT EXISTS nav_waypoint_connections (
   id INT AUTO_INCREMENT PRIMARY KEY,
   from_waypoint_id VARCHAR(50) NOT NULL,
   to_waypoint_id VARCHAR(50) NOT NULL,
@@ -92,8 +92,8 @@ CREATE TABLE IF NOT EXISTS waypoint_connections (
   connection_type ENUM('WALK', 'ELEVATOR', 'ESCALATOR', 'STAIRS') DEFAULT 'WALK',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (from_waypoint_id) REFERENCES waypoints(id) ON DELETE CASCADE,
-  FOREIGN KEY (to_waypoint_id) REFERENCES waypoints(id) ON DELETE CASCADE,
+  FOREIGN KEY (from_waypoint_id) REFERENCES nav_waypoints(id) ON DELETE CASCADE,
+  FOREIGN KEY (to_waypoint_id) REFERENCES nav_waypoints(id) ON DELETE CASCADE,
   UNIQUE KEY unique_connection (from_waypoint_id, to_waypoint_id),
   INDEX idx_from (from_waypoint_id),
   INDEX idx_to (to_waypoint_id),
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS waypoint_connections (
 -- Table: flight_gates
 -- Description: Flight number to gate mapping (real-time or manual)
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS flight_gates (
+CREATE TABLE IF NOT EXISTS nav_flight_gates (
   id INT AUTO_INCREMENT PRIMARY KEY,
   flight_number VARCHAR(10) NOT NULL,
   airline_code VARCHAR(3) NOT NULL,
@@ -125,9 +125,9 @@ CREATE TABLE IF NOT EXISTS flight_gates (
   status ENUM('SCHEDULED', 'BOARDING', 'DEPARTED', 'CANCELLED', 'DELAYED') DEFAULT 'SCHEDULED',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (terminal_id) REFERENCES terminals(id) ON DELETE RESTRICT,
-  FOREIGN KEY (gate_waypoint_id) REFERENCES waypoints(id) ON DELETE SET NULL,
-  FOREIGN KEY (counter_waypoint_id) REFERENCES waypoints(id) ON DELETE SET NULL,
+  FOREIGN KEY (terminal_id) REFERENCES nav_terminals(id) ON DELETE RESTRICT,
+  FOREIGN KEY (gate_waypoint_id) REFERENCES nav_waypoints(id) ON DELETE SET NULL,
+  FOREIGN KEY (counter_waypoint_id) REFERENCES nav_waypoints(id) ON DELETE SET NULL,
   INDEX idx_flight (flight_number, departure_time),
   INDEX idx_airline (airline_code),
   INDEX idx_departure (departure_time),
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS flight_gates (
 -- Table: user_locations
 -- Description: User location tracking (GPS or manual selection)
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS user_locations (
+CREATE TABLE IF NOT EXISTS nav_user_locations (
   id INT AUTO_INCREMENT PRIMARY KEY,
   telegram_user_id BIGINT NOT NULL,
   terminal_id VARCHAR(10),
@@ -150,8 +150,8 @@ CREATE TABLE IF NOT EXISTS user_locations (
   location_source ENUM('GPS', 'MANUAL', 'WIFI', 'BEACON') DEFAULT 'MANUAL',
   timestamp DATETIME NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (terminal_id) REFERENCES terminals(id) ON DELETE SET NULL,
-  FOREIGN KEY (nearest_waypoint_id) REFERENCES waypoints(id) ON DELETE SET NULL,
+  FOREIGN KEY (terminal_id) REFERENCES nav_terminals(id) ON DELETE SET NULL,
+  FOREIGN KEY (nearest_waypoint_id) REFERENCES nav_waypoints(id) ON DELETE SET NULL,
   INDEX idx_user (telegram_user_id),
   INDEX idx_timestamp (timestamp),
   INDEX idx_terminal (terminal_id, floor_number)
@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS user_locations (
 -- Table: navigation_routes
 -- Description: Navigation route history and active sessions
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS navigation_routes (
+CREATE TABLE IF NOT EXISTS nav_navigation_routes (
   id VARCHAR(36) PRIMARY KEY,
   telegram_user_id BIGINT NOT NULL,
   flight_number VARCHAR(10),
@@ -176,8 +176,8 @@ CREATE TABLE IF NOT EXISTS navigation_routes (
   completed_at TIMESTAMP NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (start_waypoint_id) REFERENCES waypoints(id) ON DELETE RESTRICT,
-  FOREIGN KEY (end_waypoint_id) REFERENCES waypoints(id) ON DELETE RESTRICT,
+  FOREIGN KEY (start_waypoint_id) REFERENCES nav_waypoints(id) ON DELETE RESTRICT,
+  FOREIGN KEY (end_waypoint_id) REFERENCES nav_waypoints(id) ON DELETE RESTRICT,
   INDEX idx_user_status (telegram_user_id, status),
   INDEX idx_flight (flight_number),
   INDEX idx_status (status),

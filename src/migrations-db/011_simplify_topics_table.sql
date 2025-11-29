@@ -1,12 +1,13 @@
 -- Recreate topics table with simplified structure
 -- Drop existing topics table and recreate with clean structure
 
+DROP TABLE IF EXISTS subjects;
 DROP TABLE IF EXISTS topics;
 
 -- Create simplified topics table
 CREATE TABLE topics (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
+  name VARCHAR(255) NOT NULL UNIQUE,
   description TEXT,
   day_of_month TINYINT NULL CHECK (day_of_month >= 1 AND day_of_month <= 31),
   topic_category VARCHAR(100) DEFAULT 'General',

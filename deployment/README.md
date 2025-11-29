@@ -9,7 +9,7 @@ deployment/
 ├── README.md              # 이 파일
 ├── DEPLOYMENT.md          # 상세 배포 가이드
 ├── .env.example           # 환경변수 설정 예시
-├── docker-compose.prod.yml # 프로덕션 Docker Compose 설정
+├── docker-compose.yml # 프로덕션 Docker Compose 설정
 ├── deploy.sh              # 배포 자동화 스크립트
 └── init.sql               # 데이터베이스 초기화 스크립트
 ```

@@ -115,11 +115,11 @@ This document describes the redesigned architecture for the Aviation Quiz System
 ### Environment Variables
 ```bash
 # Database
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=aviation_quiz
+DATABASE_HOST=localhost
+DATABASE_PORT=3306
+DATABASE_USER=root
+DATABASE_PASSWORD=your_password
+DATABASE_NAME=aviation_quiz
 
 # AI Providers
 GEMINI_API_KEY=your_gemini_key

@@ -464,14 +464,14 @@ CLAUDE_API_KEY=                    # Optional: Anthropic Claude key
 OLLAMA_BASE_URL=http://localhost:11434  # Optional: Local AI
 
 # Database Configuration
-DB_HOST=localhost                  # MySQL host (default: localhost)
-DB_PORT=3306                       # MySQL port (default: 3306)
-DB_USER=root                       # MySQL user (default: root)
-DB_PASSWORD=                       # Required: MySQL password
-DB_NAME=aviation_bot               # Database name (default: voyagerss)
-DB_CONNECTION_LIMIT=10             # Connection pool size (default: 10)
-DB_ACQUIRE_TIMEOUT_MILLIS=60000   # Pool timeout in ms
-DB_CONNECT_TIMEOUT=60000           # Connection timeout in ms
+DATABASE_HOST=localhost                  # MySQL host (default: localhost)
+DATABASE_PORT=3306                       # MySQL port (default: 3306)
+DATABASE_USER=root                       # MySQL user (default: root)
+DATABASE_PASSWORD=                       # Required: MySQL password
+DATABASE_NAME=aviation_bot               # Database name (default: voyagerss)
+DATABASE_CONNECTION_LIMIT=10             # Connection pool size (default: 10)
+DATABASE_ACQUIRE_TIMEOUT_MILLIS=60000   # Pool timeout in ms
+DATABASE_CONNECT_TIMEOUT=60000           # Connection timeout in ms
 
 # Application
 NODE_ENV=development               # development|production

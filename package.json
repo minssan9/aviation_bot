@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/app.js",
     "start:prod": "node src/app.js",
-    "dev": "NODE_ENV=development nodemon --watch src --ext js,json --signal SIGTERM src/app.js",
+    "dev": "cross-env NODE_ENV=development nodemon --watch src --ext js,json --signal SIGTERM src/app.js",
     "legacy": "node bot.js",
     "docker:build": "docker build -t aviation-bot:latest .",
     "compose:up": "docker compose up -d",
@@ -20,6 +20,8 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "moment-timezone": "^0.5.43",
     "multer": "^2.0.2",
     "mysql2": "^3.14.3",
@@ -28,6 +30,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^3.1.7"
   }
 }

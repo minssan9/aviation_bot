@@ -108,8 +108,8 @@ class Config {
     this.GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Google AI
     this.OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434'; // Ollama Local
     // MySQL configuration
-    this.DB_HOST = process.env.DB_HOST || 'localhost';
-    this.DB_CONNECTION_LIMIT = parseInt(process.env.DB_CONNECTION_LIMIT) || 10;
+    this.DATABASE_HOST = process.env.DATABASE_HOST || 'localhost';
+    this.DATABASE_CONNECTION_LIMIT = parseInt(process.env.DATABASE_CONNECTION_LIMIT) || 10;
     // Validation & environment detection
     this.NODE_ENV = process.env.NODE_ENV || 'development';
   }
@@ -181,7 +181,7 @@ npm install
 
 # Environment configuration
 cp .env.example .env
-# Configure: BOT_TOKEN, GEMINI_API_KEY, CLAUDE_API_KEY, DB_*
+# Configure: BOT_TOKEN, GEMINI_API_KEY, CLAUDE_API_KEY, DATABASE_*
 
 # Development server
 npm run dev          # Hot reload with nodemon
