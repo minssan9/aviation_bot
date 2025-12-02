@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Check for syntax errors
-        run: node --check src/app.js
+        run: node --check backend/src/app.js
 
   frontend-build:
     name: Frontend - Build Check
