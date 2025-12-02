@@ -85,7 +85,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { topicsApi } from '../api/client';
-import { useQuasar } from 'quasar';
+import { useQuasar, type QTableColumn } from 'quasar';
 import type { Topic } from '../types/api';
 
 const $q = useQuasar();
@@ -111,7 +111,7 @@ const dayOptions = [
   { label: '토요일', value: 6 }
 ].map(opt => ({ label: opt.label, value: opt.value }));
 
-const columns = [
+const columns: QTableColumn[] = [
   {
     name: 'id',
     required: true,
@@ -140,7 +140,7 @@ const columns = [
     label: '요일',
     align: 'center',
     field: 'day_of_month',
-    format: (val: number) => {
+    format: (val: any) => {
       const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
       return dayNames[val] || val;
     },
