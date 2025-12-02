@@ -57,6 +57,15 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
+      - name: Copy docker-compose.prod.yml to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USERNAME }}
+          password: ${{ secrets.DROPLET_PASSWORD }}
+          source: "deployment/docker-compose.prod.yml"
+          target: "/data/devops/aviation-bot"
+
       - name: Deploy to Droplet
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -64,22 +73,18 @@ jobs:
           username: ${{ secrets.DROPLET_USERNAME }}
           password: ${{ secrets.DROPLET_PASSWORD }}
           script: |
+            cd /data/devops/aviation-bot
+            mv deployment/docker-compose.prod.yml docker-compose.yml
+            rm -rf deployment
+
             # Login to Registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Pull Image
             docker pull ghcr.io/${{ github.repository }}-frontend:latest
 
-            # Stop and Remove Existing Container
-            docker stop aviation-bot-frontend || true
-            docker rm aviation-bot-frontend || true
-
-            # Run New Container
-            docker run -d \
-              --name aviation-bot-frontend \
-              --restart always \
-              -p 80:80 \
-              ghcr.io/${{ github.repository }}-frontend:latest
+            # Deploy using docker-compose
+            docker-compose up -d frontend
 
             # Prune unused images
             docker image prune -f

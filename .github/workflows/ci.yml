@@ -23,19 +23,22 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
+        working-directory: backend
         run: npm ci
 
       - name: Check for syntax errors
-        run: node --check backend/src/app.js
+        working-directory: backend
+        run: node --check src/app.js
 
   frontend-build:
     name: Frontend - Build Check
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: frontend
 
     steps:
       - name: Checkout code

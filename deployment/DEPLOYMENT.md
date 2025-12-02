@@ -88,46 +88,6 @@ sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 ```
 
-### 5. 방화벽 설정 (선택사항)
-
-```bash
-# UFW 사용 시
-sudo ufw allow 3010/tcp
-sudo ufw allow 3306/tcp
-```
-
-## 🔧 GitHub Actions 자동 배포
-
-### 필요한 GitHub Secrets
-
-Repository > Settings > Secrets and variables > Actions에서 다음 secrets을 설정:
-
-```
-HOST=your_server_ip_or_domain
-USERNAME=your_server_username
-PRIVATE_KEY=your_ssh_private_key
-
-BOT_TOKEN=your_telegram_bot_token
-GEMINI_API_KEY=your_gemini_api_key
-CLAUDE_API_KEY=your_claude_api_key
-
-DATABASE_USER=aviation
-DATABASE_PASSWORD=your_secure_password
-DATABASE_NAME=aviation_bot
-```
-
-### 자동 배포 과정
-
-1. `main` 브랜치에 코드 푸시
-2. GitHub Actions에서 테스트 실행
-3. Docker 이미지 빌드 → GitHub Container Registry에 푸시
-4. 서버에 배포 파일 복사
-5. 서버에서 자동 배포 실행
-
-## 🛠️ 수동 배포
-
-### 1. 배포 파일 업데이트
-
 ```bash
 cd /opt/aviation-bot
 

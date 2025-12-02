@@ -44,7 +44,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: backend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -60,13 +60,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy docker-compose.yml to server
+      - name: Copy docker-compose.prod.yml to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USERNAME }}
           password: ${{ secrets.DROPLET_PASSWORD }}
-          source: "deployment/docker-compose.yml"
+          source: "deployment/docker-compose.prod.yml"
           target: "/data/devops/aviation-bot"
 
       - name: Deploy via SSH
@@ -76,8 +76,9 @@ jobs:
           username: ${{ secrets.DROPLET_USERNAME }}
           password: ${{ secrets.DROPLET_PASSWORD }}
           script: |
-            mkdir -p /data/devops/aviation-bot
             cd /data/devops/aviation-bot
+            mv deployment/docker-compose.prod.yml docker-compose.yml
+            rm -rf deployment
 
             # Create .env file from secret
             echo "${{ secrets.ENV_FILE }}" > .env

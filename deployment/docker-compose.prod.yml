@@ -3,9 +3,6 @@ version: "3.9"
 services:
   app:
     image: ghcr.io/${GITHUB_REPOSITORY}:latest
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
     environment:
       - NODE_ENV=production
       - BOT_TOKEN=${BOT_TOKEN}
@@ -33,9 +30,6 @@ services:
 
   frontend:
     image: ghcr.io/${GITHUB_REPOSITORY}-frontend:latest
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
     ports:
       - "80:80"
     restart: unless-stopped
